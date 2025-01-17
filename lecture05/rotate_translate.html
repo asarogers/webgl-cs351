@@ -1,0 +1,32 @@
+<!-- Last edited by Dietrich Geisler 2024 -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<body onload="main()">
+    <!-- WebGL Utility Scripts -->
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-quat03.js"></script>
+
+    <!-- Select a JavaScript file -->
+    <script src="rotate_translate.js"></script>
+
+    <!-- Setup the Canvas -->
+    <canvas id="canvas" width="300" height="300">
+        Please use a browser that supports "canvas"
+    </canvas>
+
+    <!-- Add two sliders -->
+    <div>
+        <input type="range" id="xOffset" min="-1" max="1" step=".01" />
+        <label id="offsetLabel" for="xOffset"></label>
+    </div>
+    <div>
+        <input type="range" id="rotation" min="-3.14" max="3.14" step=".01" />
+        <label id="rotationLabel" for="rotation"></label>
+    </div>
+</body>
+
+</html>
