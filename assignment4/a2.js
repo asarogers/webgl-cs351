@@ -30,6 +30,7 @@ const FSHADER_SOURCE = `
 `
 // the transformation we'll be updating
 var g_model
+var g_model_small
 var g_world
 
 // Global reference to the webGL context, canvas, and VBO
@@ -47,19 +48,29 @@ var g_uColor_ref
 // The current color we are using
 // You may consider modifying this to instead indicate which vertex is colored
 var g_color_index = 0
+var g_color_small_index = 0
+const defaultColor_small = [0.0, 0.2, 0.5];
+const customColor_small = [0.0, 0.5, 0.2];
+
 const defaultColor = [1.0, 0.0, 0.25];
 const customColor = [0.6, 0.4, 0.2];
 
-const repeatedColors1 = [...Array(2).fill(defaultColor), ...customColor].flat();
-const repeatedColors2 = [...Array(1).fill(defaultColor), ...customColor, ...defaultColor].flat();
-// const repeatedColors3 = [(defaultColor), ...customColor, ...Array(1).fill(defaultColor)].flat();
-const repeatedColors3 = [...customColor,...Array(2).fill(defaultColor)].flat();
 
-const COLORS = [
-    [...repeatedColors1],
-    [...repeatedColors2],
-    [...repeatedColors3],
-]
+function createColors(primary, second){
+    const color1 = [...Array(2).fill(primary), ...second].flat();
+    const color2 = [...Array(1).fill(primary), ...second, ...primary].flat();
+    const color3 = [...second,...Array(2).fill(primary)].flat();
+
+    return [
+        ...[color1],
+        ...[color2],
+        ...[color3]
+    ]
+}
+
+
+const COLORS = createColors(defaultColor, customColor)
+const COLORS_small = createColors(defaultColor_small, customColor_small)
 
 const ROT45 = [
     Math.cos(Math.PI / 4), Math.sin(Math.PI / 4), 0, 0,
@@ -110,8 +121,12 @@ const ID_MATRIX = [
 const VERTICES = [
     -0.5, 0.5, 0.0, //top left
     0.5, 0.5, 0.0, //top right
-    0.5, -0.5, 0.0,
+    0.0, -0.5, 0.0,
 ]
+
+const VERTICES_small = VERTICES.map(vertex => vertex/2)
+
+
 const VERTEX_COUNT = VERTICES.length / 3
 
 // The size in bytes of a floating point
@@ -119,22 +134,6 @@ const FLOAT_SIZE = 4
 
 function main() {
     g_canvas = document.getElementById('canvas')
-
-    // listen for the slider change
-    // slider_input_x = document.getElementById('offset_x')
-    // slider_input_x.addEventListener('input', (event)=>{
-    //     updateOffset_x(event.target.value)
-    // })
-
-    // slider_input_y = document.getElementById('offset_y')
-    // slider_input_y.addEventListener('input', (event)=>{
-    //     updateOffset_y(event.target.value)
-    // })
-
-    // slider_rotation = document.getElementById("rotation")
-    // slider_rotation.addEventListener("input", (event)=>{
-    //     updateRotation(event.target.value)
-    // })
 
     // Get the rendering context for WebGL
     gl = getWebGLContext(g_canvas, true)
@@ -149,15 +148,6 @@ function main() {
         return
     }
 
-    // Create our VBO and bind an ARRAY BUFFER to it
-    // This only needs to be done once
-    var VBOloc = gl.createBuffer()
-    if (!VBOloc) {
-        console.log('Failed to create the vertex buffer object')
-        return false
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, VBOloc)
-
     // get the u_offset reference from the shader
     g_xOffset_ref = gl.getUniformLocation(gl.program, 'x_Offset')
     g_yOffset_ref = gl.getUniformLocation(gl.program, 'y_Offset')
@@ -168,53 +158,60 @@ function main() {
     // updateOffset_x(0)
     // updateOffset_y(0)
     // updateRotation(0)
-    reset()
-    // rotate45()
-
-
-    draw()
+    reset();
+    initBuffers();
+    draw();
 }
 
-function draw() {
+function drawShape(model, world, vertexBuffer, colorBuffer, vertexCount) {
+    // Set transformation matrices
+    gl.uniformMatrix4fv(g_u_model_ref, false, new Float32Array(model));
+    gl.uniformMatrix4fv(g_u_world_ref, false, new Float32Array(world));
 
-    gl.uniformMatrix4fv(g_u_model_ref, false, new Float32Array(g_model))
-    gl.uniformMatrix4fv(g_u_world_ref, false, new Float32Array(g_world))
-
-    // Create and bind the vertex buffer
-    var VBOloc = gl.createBuffer();
-    if (!VBOloc) {
-        console.log('Failed to create the vertex buffer object');
-        return;
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, VBOloc);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(VERTICES), gl.STREAM_DRAW);
-
-    // Use setupVec3 to set up the a_Position attribute
+    // Bind the vertex buffer and set up the a_Position attribute
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     setupVec3('a_Position', 0, 0);
 
-    // Create and bind the color buffer
-    var colorVBO = gl.createBuffer();
-    if (!colorVBO) {
-        console.log('Failed to create the color buffer object');
-        return;
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(COLORS[g_color_index]), gl.STREAM_DRAW);
-
-    // Use setupVec3 to set up the a_color attribute
+    // Bind the color buffer and set up the a_color attribute
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     setupVec3('a_color', 0, 0);
 
-    // Clear the canvas with a dark grey background
-    gl.clearColor(0.1, 0.1, 0.1, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    
+    // Draw the shape
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+}
 
-    // Draw points and lines
-    gl.drawArrays(gl.POINTS, 0, VERTEX_COUNT);
-    gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
+let vertexBuffer1, vertexBuffer2, colorBuffer1, colorBuffer2;
 
-    requestAnimationFrame(draw, g_canvas)
+function initBuffers() {
+
+    vertexBuffer1 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer1);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(VERTICES), gl.STATIC_DRAW);
+
+    colorBuffer1 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer1);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(COLORS[g_color_index]), gl.STATIC_DRAW);
+
+    //  second triangle
+    vertexBuffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(VERTICES_small), gl.STATIC_DRAW);
+
+    colorBuffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(COLORS_small[g_color_index]), gl.STATIC_DRAW);
+}
+
+
+function draw() {
+   gl.clearColor(0.1, 0.1, 0.1, 1.0);
+   gl.clear(gl.COLOR_BUFFER_BIT);
+
+   drawShape(g_model, g_world, vertexBuffer1, colorBuffer1, VERTEX_COUNT);
+   drawShape(g_model_small, g_world, vertexBuffer2, colorBuffer2, VERTEX_COUNT);
+
+    // Request the next frame
+    requestAnimationFrame(draw);
 }
 
 
@@ -222,12 +219,20 @@ function draw() {
 // HINT: consider adjusting this function
 function nextColor() {
     
-    // note our use of === for comparison rather than ==
     g_color_index = (g_color_index + 1) % COLORS.length;
-    console.log(g_color_index)
+    // console.log(g_color_index)
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer1);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(COLORS[g_color_index]), gl.STATIC_DRAW);
 
-    draw()
 }
+
+function nextColor_second(){
+    g_color_small_index = (g_color_small_index + 1) % COLORS.length;
+    // console.log(g_color_index)
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer2);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(COLORS_small[g_color_small_index]), gl.STATIC_DRAW);
+}
+
 
 /*
  * Helper function to load the given vec3 data chunk onto the VBO
@@ -251,50 +256,63 @@ function setupVec3(name, stride, offset) {
 }
 
 function rotate45() {
-    g_model = mat4multiply(ROT45, g_model)
+    // (g_model * ROT45) * g_world
+    g_model = mat4multiply(mat4multiply(g_model, ROT45), g_world);
+
 }
 
-// function updateOffset_x(amount) {
-//     label = document.getElementById('sliderLabel_x')
-//     label.textContent = `X Offset: ${amount}`
-//     gl.uniform1f(g_xOffset_ref, amount)
-// }
-
-
-
-// function updateOffset_y(amount) {
-//     label = document.getElementById('sliderLabel_y')
-//     label.textContent = `Y Offset: ${amount}`
-//     gl.uniform1f(g_yOffset_ref, amount)
-// }
-
-// function updateRotation(amount) {
-//     label = document.getElementById('sliderLabelRotation')
-//     label.textContent = `Rotation: ${amount}`
-//     gl.uniform1f(g_roation_ref, amount)
-// }
 
 function reset() {
     g_model = ID_MATRIX
     g_world = ID_MATRIX
+    g_model_small = ID_MATRIX;
 }
 
 function translateLeft(){
-    g_world = mat4multiply(TRANSLATE_LEFT, g_world)
+    g_model = mat4multiply(TRANSLATE_LEFT, g_model)
+
 }
 
 function translateRight(){
-    g_world = mat4multiply(TRANSLATE_RIGHT, g_world)
+    g_model = mat4multiply(TRANSLATE_RIGHT, g_model)
+
 }
 
 
 function moveUp(){
-    g_world = mat4multiply(MOVE_UP, g_world)
+    g_model = mat4multiply(MOVE_UP, g_model)
+
 }
 
 function moveDown(){
-    g_world = mat4multiply(MOVE_DOWN, g_world)
+    g_model = mat4multiply(MOVE_DOWN, g_model)
+
 }
+
+function translateLeft_second(){
+    g_model_small = mat4multiply(TRANSLATE_LEFT, g_model_small)
+}
+
+function translateRight_second(){
+    g_model_small = mat4multiply(TRANSLATE_RIGHT, g_model_small)
+}
+
+
+
+function rotate45_second(){
+    g_model_small = mat4multiply(mat4multiply(g_model_small, ROT45), g_world);
+}
+
+function moveUp_second(){
+    g_model_small = mat4multiply(MOVE_UP, g_model_small)
+}
+
+function moveDown_second(){
+    g_model_small = mat4multiply(MOVE_DOWN, g_model_small)
+}
+
+
+
 
 function mat4multiply(m1, m2) {
     // column-first 4D matrix multiply
