@@ -1,0 +1,58 @@
+<!-- Last edited by Dietrich Geisler 2024 -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<body onload="main()">
+    <!-- WebGL Utility Scripts -->
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-quat03.js"></script>
+
+    <!-- Select a JavaScript file -->
+    <script src="a3.js"></script>
+
+    <!-- Setup the Canvas -->
+    <canvas id="canvas" width="400" height="400">
+        Please use a browser that supports "canvas"
+    </canvas>
+
+    <!-- Add a Button -->
+
+    <div>
+        First Triangle Controls
+
+        <p>
+            <input type="button" onclick="rotate45()" value="Rotate 45">
+            <input type="button" onclick="translateLeft()" value="Move Left">
+            <input type="button" onclick="translateRight()" value="Move Right">
+            <input type="button" onclick="moveUp()" value="Move Up">
+            <input type="button" onclick="moveDown()" value="Move Down">
+            <input type="button" onclick="reset()" value="Reset">
+        </p>
+        <p>
+            <input type="button" onclick="nextColor()" value="Next Color">
+        </p>
+
+    </div>
+
+    <div>
+        Second Triangle Controls
+
+        <p>
+            <input type="button" onclick="rotate45_second()" value="Rotate 45">
+            <input type="button" onclick="translateLeft_second()" value="Move Left">
+            <input type="button" onclick="translateRight_second()" value="Move Right">
+            <input type="button" onclick="moveUp_second()" value="Move Up">
+            <input type="button" onclick="moveDown_second()" value="Move Down">
+            <input type="button" onclick="reset()" value="Reset">
+        </p>
+        <p>
+            <input type="button" onclick="nextColor_second()" value="Next Color">
+        </p>
+
+    </div>
+</body>
+
+</html>

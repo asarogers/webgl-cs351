@@ -1,0 +1,4 @@
+How long did the assignment took me, in minutes: 100 minutes
+How well I understood the material, where 1 is low and 10 is high: 9
+
+additional: I began working on the assignment shortly after lecture on wednesday, so I spent most of my time learning from the examplings, which would explain the increased time.
