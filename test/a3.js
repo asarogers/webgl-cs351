@@ -32,6 +32,7 @@ const FSHADER_SOURCE = `
 var g_model
 var g_model_small
 var g_world
+var g_galaxy
 
 // Global reference to the webGL context, canvas, and VBO
 var g_canvas
@@ -44,6 +45,8 @@ var g_u_model_ref
 
 // Global reference to the uniform pointer to u_Color from our shaders
 var g_uColor_ref
+var g_last_frame_ms
+var g_movement
 
 // The current color we are using
 // You may consider modifying this to instead indicate which vertex is colored
@@ -118,13 +121,39 @@ const ID_MATRIX = [
 ]
 
 // Setup our vertex (points) for a simple triangle
+// const VERTICES = [
+//     -0.0,  0.5, 0.0, //top left
+//      1.0,  0.5, 0.0, //top right
+//      0.5, -0.5, 0.0,
+// ]
+
 const VERTICES = [
     -0.5, 0.5, 0.0, //top left
     0.5, 0.5, 0.0, //top right
     0.0, -0.5, 0.0,
 ]
 
-const VERTICES_small = VERTICES.map(vertex => vertex/2)
+var substract = 0
+// const VERTICES_small = [
+//     0.7 ,  0.25, 0.0, //top left
+//      1.20,  0.25, 0.0, //top right
+//      0.95, -0.25, 0.0,
+// ]
+
+const VERTICES_small = [
+    -.25,  0.25, 0.0, //top left
+     0.25,  0.25, 0.0, //top right
+     0.0, -0.25, 0.0,
+]
+
+const OffSet = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0.9, 0, 0, 1
+]   
+
+
 
 
 const VERTEX_COUNT = VERTICES.length / 3
@@ -154,14 +183,59 @@ function main() {
     g_roation_ref = gl.getUniformLocation(gl.program, 'z_Rotation')
     g_u_model_ref = gl.getUniformLocation(gl.program, 'u_Model')
     g_u_world_ref = gl.getUniformLocation(gl.program, 'u_World')
+    
+    g_last_frame_ms = Date.now()
+     // Keep track of our current Y component (initially 0)
+     translate_time = 0
+     g_moving_up = true
 
     // updateOffset_x(0)
     // updateOffset_y(0)
     // updateRotation(0)
-    reset();
     initBuffers();
-    draw();
+    reset();
+    tick()
+
 }
+
+const MOVE_SPEED = .01
+
+function tick(){
+    var current_time = Date.now()
+    var delta_time = current_time - g_last_frame_ms
+    g_last_frame_ms = current_time
+
+    // console.log(delta_time)
+    var frame_movement = -MOVE_SPEED
+    // if (!g_movement){
+    //     frame_movement = -MOVE_SPEEDmoveTriangle
+    // }
+
+    g_model_small = moveTriangle(frame_movement, g_model_small)
+
+    translate_time += delta_time
+    if (translate_time > 1400) {
+        g_movement = !g_movement
+        translate_time = 0
+        g_model_small = mat4multiply(ID_MATRIX, OffSet)
+    }
+
+    draw();
+    requestAnimationFrame(tick, g_canvas)
+}
+
+function moveTriangle(frame_movement, model) {
+    // console.log(frame_movement)
+    const matrix_movement = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        frame_movement, 0, 0, 1
+    ];
+    const transformed_model = mat4multiply(matrix_movement, model);
+    return transformed_model;
+}
+
 
 function drawShape(model, world, vertexBuffer, colorBuffer, vertexCount) {
     // Set transformation matrices
@@ -209,9 +283,6 @@ function draw() {
 
    drawShape(g_model, g_world, vertexBuffer1, colorBuffer1, VERTEX_COUNT);
    drawShape(g_model_small, g_world, vertexBuffer2, colorBuffer2, VERTEX_COUNT);
-
-    // Request the next frame
-    requestAnimationFrame(draw);
 }
 
 
@@ -263,9 +334,9 @@ function rotate45() {
 
 
 function reset() {
-    g_model = ID_MATRIX
+    g_model = mat4multiply(ID_MATRIX, OffSet)
     g_world = ID_MATRIX
-    g_model_small = ID_MATRIX;
+    g_model_small = mat4multiply(ID_MATRIX, OffSet);
 }
 
 function translateLeft(){
