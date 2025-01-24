@@ -125,20 +125,32 @@ class TamirInterface(Node):
         self.print("done")
 
 
-    def connect_speaker(self, request, response):
+    async def connect_speaker(self, request, response):
         """Pair with the target Bluetooth device."""
         try:
+            # if await self.check_device_connected(self.target_device) is False:
+            # print("No device connected")
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(self.pair_bluetooth_speaker())
             loop.close()
-
+            print("Device connected")
             return response
 
         except Exception as e:
             self.print(f"Error pairing with device: {str(e)}")
             return response
+        
+    async def check_device_connected(self, device_address):
+        try:
+            async with BleakClient(device_address) as client:
+                connected = await client.is_connected()
+                print(f"Device {device_address} connected: {connected}")
+                return True
+            return False
+        except Exception as e:
 
+            print(f"Error checking device: {e}")
         
     async def pair_bluetooth_speaker(self):
         try:
