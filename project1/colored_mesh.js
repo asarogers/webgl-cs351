@@ -31,7 +31,8 @@ var g_u_world_ref
 
 // usual model/world matrices
 var g_modelMatrix
-var g_multi_modelMatrix
+var g_second_modelMatrix
+var g_third_modelMatrix
 var g_worldMatrix
 
 // the current axis of rotation
@@ -42,14 +43,39 @@ var g_rotationAxis
 // TODO: replace with your mesh :)
 class Square{
     constructor(VERTICES){
-        this.VERTICES = VERTICES
-        this.VERTEX_COUNT = VERTICES.length / 3
-        this.TRIANGLE_SIZE = 3
+        this.VERTICES = VERTICES;
+        this.VERTEX_COUNT = VERTICES.length / 3;
+        this.TRIANGLE_SIZE = 3;
+        this.COLOR_BUFFER = null;
+        this.BUFFER = null
+        this.SPEED = 0
+        this.COLORS = null
+
+    }
+
+    bind(buffer, colorBuffer, colors){
+        this.COLOR_BUFFER = colorBuffer;
+        this.BUFFER = buffer;
+        this.COLORS = colors
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.BUFFER);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.VERTICES), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.COLOR_BUFFER);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.COLORS), gl.STATIC_DRAW);
+    }
+
+    changeColor(colors){
+        this.COLORS = colors
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.BUFFER);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.VERTICES), gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.COLOR_BUFFER);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.COLORS), gl.STATIC_DRAW);
     }
 }
 
-firstSquare = new Square(generateSquareFromVertex(0.5))
-secondSquare = new Square(generateSquareFromVertex(1.0))
+
 const TRIANGLE_SIZE = 3
 const FLOAT_SIZE = 4
 
@@ -62,8 +88,13 @@ const movement = Object.freeze({
     RESET: "reset"
 })
 
+firstSquare = new Square(generateSquareFromVertex(0.5))
+secondSquare = new Square(generateSquareFromVertex(0.5))
+thirdSquare = new Square(generateSquareFromVertex(0.5))
+
+var translate_time;
+
 var data = {}
-let vertexBuffer1, vertexBuffer2, colorBuffer1, colorBuffer2;
 function main() {
     g_canvas = document.getElementById('canvas')
     // Get the rendering context for WebGL
@@ -98,21 +129,28 @@ function main() {
     tick()
 }
 
-
 function initBuffers() {
-    vertexBuffer1 = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer1);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(firstSquare.VERTICES), gl.STATIC_DRAW);
-
+    let vertexBuffer1 = gl.createBuffer();
     var colors = buildColorAttributes(firstSquare.VERTEX_COUNT);
-    colorBuffer1 = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer1);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    let colorBuffer1 = gl.createBuffer();
+    firstSquare.bind(vertexBuffer1, colorBuffer1, colors)
+
+    let vertexBuffer2 = gl.createBuffer();
+    var colors = buildColorAttributes(secondSquare.VERTEX_COUNT);
+    let colorBuffer2 = gl.createBuffer();
+    secondSquare.bind(vertexBuffer2, colorBuffer2, colors)
+
+    let vertexBuffer3 = gl.createBuffer();
+    var colors = buildColorAttributes(thirdSquare.VERTEX_COUNT);
+    let colorBuffer3 = gl.createBuffer();
+    thirdSquare.bind(vertexBuffer3, colorBuffer3, colors)
+
 }
 
 
 // extra constants for cleanliness
 var ROTATION_SPEED = .05
+
 
 // function to apply all the logic for a single frame tick
 function tick() {
@@ -125,13 +163,48 @@ function tick() {
     g_lastFrameMS = current_time
 
     // rotate the arm constantly around the given axis (of the model)
-    angle = ROTATION_SPEED * deltaTime
+    angle = ROTATION_SPEED * deltaTime 
     g_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis))
+    g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...g_rotationAxis))
+    g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...g_rotationAxis))
+
+    translate_time += deltaTime
+    if (translate_time >= 3000){
+        translate_time = 0
+        reset_moving_shapes()
+
+        setSpeed()
+        changeColor()
+    }
+    
+    // console.log(g_second_modelMatrix)
+
+
+
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, -secondSquare.SPEED)
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, -thirdSquare.SPEED)
     
 
     draw()
-
     requestAnimationFrame(tick, g_canvas)
+}
+
+function changeColor(){
+    var colors = buildColorAttributes(secondSquare.VERTEX_COUNT);
+    secondSquare.changeColor(colors)
+
+    var colors = buildColorAttributes(thirdSquare.VERTEX_COUNT);
+    thirdSquare.changeColor(colors)
+}
+function setSpeed(){
+    let lower = 0.005
+    let upper = 0.01
+    speed1 = lower + Math.random() * (upper - lower)
+    speed2 = lower + Math.random() * (upper - lower)
+
+    
+    secondSquare.SPEED = speed2
+    thirdSquare.SPEED = speed1
 }
 
 // draw to the screen on the next frame
@@ -139,30 +212,33 @@ function draw() {
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
-    drawShape(g_modelMatrix.elements, g_worldMatrix.elements, vertexBuffer1, colorBuffer1, firstSquare.VERTEX_COUNT);
+    drawShape(g_modelMatrix.elements, g_worldMatrix.elements, firstSquare);
+    drawShape(g_second_modelMatrix.elements, g_worldMatrix.elements, secondSquare);
+    drawShape(g_third_modelMatrix.elements, g_worldMatrix.elements, thirdSquare);
 }
 
-function drawShape(model, world, vertexBuffer, colorBuffer, vertexCount) {
+function drawShape(model, world, shape) {
     // Set transformation matrices
     gl.uniformMatrix4fv(g_u_model_ref, false, new Float32Array(model));
     gl.uniformMatrix4fv(g_u_world_ref, false, new Float32Array(world));
 
     // Bind the vertex buffer and set up the a_Position attribute
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, shape.BUFFER);
     setupVec3('a_Position', 0, 0);
 
     // Bind the color buffer and set up the a_color attribute
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, shape.COLOR_BUFFER);
     setupVec3('a_Color', 0, 0);
 
     // Draw the shape
-    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+    gl.drawArrays(gl.TRIANGLES, 0, shape.VERTEX_COUNT);
 }
 
 // Helper to construct colors
 // makes every triangle a slightly different shade of blue
 function buildColorAttributes(vertex_count) {
-    const color1 = [.5, 0.9, 0.];
+
+    const color1 = [Math.random(), Math.random(), Math.random()];
     const color2 = [0.6, 0.4, 0.2];
     let colors = [];
     for (let i = 0; i < vertex_count; i++) {
@@ -189,20 +265,6 @@ function updateRotation() {
     g_rotationAxis[2] = Number(rotateZ.checked)
 }
 
-function setupVec3(name, stride, offset) {
-    // Get the attribute by name
-    var attributeID = gl.getAttribLocation(gl.program, `${name}`)
-    if (attributeID < 0) {
-        console.log(`Failed to get the storage location of ${name}`)
-        return false
-    }
-
-    // Set how the GPU fills the a_Position variable with data from the GPU 
-    gl.vertexAttribPointer(attributeID, 3, gl.FLOAT, false, stride, offset)
-    gl.enableVertexAttribArray(attributeID)
-
-    return true
-}
 
 function rotate45(){
     g_modelMatrix = move3DShape(g_modelMatrix, movement.ROTATE,(45 * (Math.PI / 180)))
@@ -225,11 +287,26 @@ function moveDown(){
 }
 
 function reset(){
+    translate_time = 0
     g_modelMatrix = new Matrix4()
     g_worldMatrix = new Matrix4()
     g_modelMatrix = move3DShape(g_modelMatrix, movement.RESET, ID_MATRIX)
-    g_modelMatrix = g_modelMatrix.setScale(.5, .5, .5)
+    g_modelMatrix = g_modelMatrix.setScale(.15, .15, .15)
+    setSpeed()
 
-    g_multi_modelMatrix = new Matrix4()
-    g_multi_modelMatrix = move3DShape(g_multi_modelMatrix, movement.VERTICAL, 0.5)
+
+    reset_moving_shapes()
+
+}
+
+function reset_moving_shapes(){
+    g_second_modelMatrix = new Matrix4()
+    g_second_modelMatrix = g_second_modelMatrix.setScale(0.25, 0.25, 0.25)
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, 1)
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.VERTICAL, 0.5)
+
+    g_third_modelMatrix = new Matrix4()
+    g_third_modelMatrix = g_third_modelMatrix.setScale(0.25, 0.25, 0.25)
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, 1)
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.VERTICAL, -0.5)
 }

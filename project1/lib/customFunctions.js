@@ -136,6 +136,22 @@ function move3DShape(model, move, distance){
     return model
 }
 
+function setupVec3(name, stride, offset) {
+    // Get the attribute by name
+    var attributeID = gl.getAttribLocation(gl.program, `${name}`)
+    if (attributeID < 0) {
+        console.log(`Failed to get the storage location of ${name}`)
+        return false
+    }
+
+    // Set how the GPU fills the a_Position variable with data from the GPU 
+    gl.vertexAttribPointer(attributeID, 3, gl.FLOAT, false, stride, offset)
+    gl.enableVertexAttribArray(attributeID)
+
+    return true
+}
+
+
 function ROTATE(q){
     const matrix = [
         Math.cos(q), Math.sin(q), 0, 0,
