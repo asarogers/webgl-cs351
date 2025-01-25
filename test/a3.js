@@ -237,22 +237,6 @@ function moveTriangle(frame_movement, model) {
 }
 
 
-function drawShape(model, world, vertexBuffer, colorBuffer, vertexCount) {
-    // Set transformation matrices
-    gl.uniformMatrix4fv(g_u_model_ref, false, new Float32Array(model));
-    gl.uniformMatrix4fv(g_u_world_ref, false, new Float32Array(world));
-
-    // Bind the vertex buffer and set up the a_Position attribute
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    setupVec3('a_Position', 0, 0);
-
-    // Bind the color buffer and set up the a_color attribute
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    setupVec3('a_color', 0, 0);
-
-    // Draw the shape
-    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
-}
 
 let vertexBuffer1, vertexBuffer2, colorBuffer1, colorBuffer2;
 
@@ -283,6 +267,24 @@ function draw() {
 
    drawShape(g_model, g_world, vertexBuffer1, colorBuffer1, VERTEX_COUNT);
    drawShape(g_model_small, g_world, vertexBuffer2, colorBuffer2, VERTEX_COUNT);
+}
+
+
+function drawShape(model, world, vertexBuffer, colorBuffer, vertexCount) {
+    // Set transformation matrices
+    gl.uniformMatrix4fv(g_u_model_ref, false, new Float32Array(model));
+    gl.uniformMatrix4fv(g_u_world_ref, false, new Float32Array(world));
+
+    // Bind the vertex buffer and set up the a_Position attribute
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    setupVec3('a_Position', 0, 0);
+
+    // Bind the color buffer and set up the a_color attribute
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    setupVec3('a_color', 0, 0);
+
+    // Draw the shape
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 }
 
 
