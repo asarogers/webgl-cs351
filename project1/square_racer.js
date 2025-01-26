@@ -190,6 +190,9 @@ function tick() {
 }
 
 function changeColor(){
+    var colors = buildColorAttributes(firstSquare.VERTEX_COUNT);
+    firstSquare.changeColor(colors)
+
     var colors = buildColorAttributes(secondSquare.VERTEX_COUNT);
     secondSquare.changeColor(colors)
 
