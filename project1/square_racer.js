@@ -4,10 +4,11 @@ const VSHADER_SOURCE = `
     attribute vec3 a_Position;
     uniform mat4 u_Model;
     uniform mat4 u_World;
+    uniform mat4 u_Camera;
     attribute vec3 a_Color;
     varying vec3 v_Color;
     void main() {
-        gl_Position = u_World * u_Model * vec4(a_Position, 1.0);
+        gl_Position = u_Camera * u_World * u_Model * vec4(a_Position, 1.0);
         v_Color = a_Color;
     }
 `
@@ -28,6 +29,7 @@ var firstBuffer, secondBuffer
 // GLSL uniform references
 var g_u_model_ref
 var g_u_world_ref
+var g_u_camera_ref
 
 // usual model/world matrices
 var g_modelMatrix
@@ -38,6 +40,11 @@ var g_worldMatrix
 // the current axis of rotation
 var g_rotationAxis
 
+
+// camera projection values
+var g_camera_x
+var g_camera_y
+var g_camera_z
 
 // Unit cube mesh, size 1, oriented around zero
 // TODO: replace with your mesh :)
@@ -112,6 +119,7 @@ function main() {
     // Get references to GLSL uniforms
     g_u_model_ref = gl.getUniformLocation(gl.program, 'u_Model')
     g_u_world_ref = gl.getUniformLocation(gl.program, 'u_World')
+    g_u_camera_ref = gl.getUniformLocation(gl.program, 'u_Camera')
 
     // initialize the VBO
     initBuffers();
@@ -123,6 +131,8 @@ function main() {
     // Setup for ticks
     g_lastFrameMS = Date.now()
     g_rotationAxis = [0, 0, 0]
+    setupCamera()
+
 
     // Make sure we have a defined rotation
     updateRotation()
@@ -212,12 +222,35 @@ function setSpeed(){
 
 // draw to the screen on the next frame
 function draw() {
+    var cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z)
+
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
     drawShape(g_modelMatrix.elements, g_worldMatrix.elements, firstSquare);
     drawShape(g_second_modelMatrix.elements, g_worldMatrix.elements, secondSquare);
     drawShape(g_third_modelMatrix.elements, g_worldMatrix.elements, thirdSquare);
+   
+    gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements)
+}
+
+function setupCamera(){
+    slider_input = document.getElementById('sliderX')
+    slider_input.addEventListener('input', (event) => {
+        updateCameraX(event.target.value)
+    })
+    slider_input = document.getElementById('sliderY')
+    slider_input.addEventListener('input', (event) => {
+        updateCameraY(event.target.value)
+    })
+    slider_input = document.getElementById('sliderZ')
+    slider_input.addEventListener('input', (event) => {
+        updateCameraZ(event.target.value)
+    })
+
+    updateCameraX(0)
+    updateCameraY(0)
+    updateCameraZ(0)
 }
 
 function drawShape(model, world, shape) {
@@ -266,6 +299,22 @@ function updateRotation() {
     g_rotationAxis[0] = Number(rotateX.checked)
     g_rotationAxis[1] = Number(rotateY.checked)
     g_rotationAxis[2] = Number(rotateZ.checked)
+}
+
+function updateCameraX(amount) {
+    label = document.getElementById('cameraX')
+    label.textContent = `Camera X: ${Number(amount).toFixed(2)}`
+    g_camera_x = Number(amount)
+}
+function updateCameraY(amount) {
+    label = document.getElementById('cameraY')
+    label.textContent = `Camera Y: ${Number(amount).toFixed(2)}`
+    g_camera_y = Number(amount)
+}
+function updateCameraZ(amount) {
+    label = document.getElementById('cameraZ')
+    label.textContent = `Camera Z: ${Number(amount).toFixed(2)}`
+    g_camera_z = Number(amount)
 }
 
 
