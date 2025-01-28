@@ -66,20 +66,23 @@ class YoloVisualizer(Node):
         self.y_min = 1000
         self.y_max = 0
         self.door_x = -0.291
+        self.door_z = 1.9
         self.behavior= {
             "dogIsInBathroom" : False
         }
     
     def checkBehavior(self,class_name, x, y, z):
         # "3D Coordinates of {class_name}: x={x:.3f}, y={y:.3f}, z={z:.3f}"
-        self.logger(f"3D Coords of {class_name}: x={x:.3f}")
-        if z >= 1.9:
+        # self.logger(f"3D Coords of {class_name}: x={x:.3f}")
+        if z >= self.door_z:
             # self.logger("passed by z")
             door_x_min = self.door_x - (self.door_width / 2)
             door_x_max = self.door_x + (self.door_width / 2)
             if door_x_min <= x <= door_x_max:
                 self.logger("Dog is in bathroom")
                 self.behavior["dogIsInBathroom"] = True
+        elif z < self.door_z:
+            self.behavior["dogIsInBathroom"] = False
 
 
     def camera_info_callback(self, camera_info_msg):
@@ -161,13 +164,13 @@ class YoloVisualizer(Node):
         return x, y, z
 
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = YoloVisualizer()
-    rclpy.spin(node)
-    rclpy.shutdown()
+# def main(args=None):
+#     rclpy.init(args=args)
+#     node = YoloVisualizer()
+#     rclpy.spin(node)
+#     rclpy.shutdown()
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 

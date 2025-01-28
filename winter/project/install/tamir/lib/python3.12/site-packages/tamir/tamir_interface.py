@@ -37,6 +37,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from tamir.Bluetooth_Node import Bluetooth_Node
+from tamir.vision import YoloVisualizer
 import asyncio
 import subprocess
 from launch_ros.substitutions import FindPackageShare
@@ -76,6 +77,7 @@ class TamirInterface(Node):
         self.print = self.get_logger().info
         self.bluetooth = Bluetooth_Node()
         client_cb_group = ReentrantCallbackGroup()
+        self.vision = YoloVisualizer()
         self.target_device = "26:91:71:54:00:09"
         self.client = None
 
@@ -223,6 +225,7 @@ def main(args=None):
     # Create the executor
     executor = MultiThreadedExecutor()
     executor.add_node(tamir)
+    executor.add_node(tamir.vision)
 
     try:
         executor.spin()
@@ -232,6 +235,7 @@ def main(args=None):
         tamir.disconnect_client()
         executor.shutdown()
         tamir.destroy_node()
+        tamir.vision.destroy_node()
         rclpy.shutdown()
 
 
