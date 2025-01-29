@@ -94,9 +94,10 @@ class TamirInterface(Node):
         
 
     def listener_callback(self, msg):
-        states_info = [{"name": state.name, "state": state.state} for state in msg.states]
-        self.get_logger().info(f'Received: {states_info}')
+        # states_info = [{"name": state.name, "state": state.state} for state in msg.states]
+        # self.get_logger().info(f'Received: {states_info}')
         self.behavior = msg.states[0]
+        self.print(f"state = {self.behavior}")
 
 
     def play_audio(self, request, response):
