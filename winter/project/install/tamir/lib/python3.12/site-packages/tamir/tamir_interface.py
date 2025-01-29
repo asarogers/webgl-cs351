@@ -37,7 +37,6 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from tamir.Bluetooth_Node import Bluetooth_Node
-from tamir.vision import YoloVisualizer
 import asyncio
 import subprocess
 from launch_ros.substitutions import FindPackageShare
@@ -46,6 +45,8 @@ from std_srvs.srv import Empty
 from bleak import BleakScanner, BleakClient
 import ultralytics
 from rclpy.executors import MultiThreadedExecutor
+from tamir_interface.msg import BehaviorList 
+
 
 class TamirInterface(Node):
     """
@@ -77,7 +78,6 @@ class TamirInterface(Node):
         self.print = self.get_logger().info
         self.bluetooth = Bluetooth_Node()
         client_cb_group = ReentrantCallbackGroup()
-        self.vision = YoloVisualizer()
         self.target_device = "26:91:71:54:00:09"
         self.client = None
 
@@ -85,6 +85,18 @@ class TamirInterface(Node):
         self.bluetoothScanner = self.create_service(Empty, 'scan_for_devices', self.bluetooth_scanner, callback_group=client_cb_group)
         self.pairBluetooth = self.create_service(Empty, 'pair_bluetooth', self.connect_speaker, callback_group=client_cb_group)
 
+        self.subscription = self.create_subscription(
+                    BehaviorList,
+                    'behavior_msg',
+                    self.listener_callback,
+                    10)
+        self.behavior = None
+        
+
+    def listener_callback(self, msg):
+        states_info = [{"name": state.name, "state": state.state} for state in msg.states]
+        self.get_logger().info(f'Received: {states_info}')
+        self.behavior = msg.states[0]
 
 
     def play_audio(self, request, response):
@@ -225,17 +237,16 @@ def main(args=None):
     # Create the executor
     executor = MultiThreadedExecutor()
     executor.add_node(tamir)
-    executor.add_node(tamir.vision)
 
     try:
         executor.spin()
+        tamir.print("Hello")
     except KeyboardInterrupt:
         tamir.get_logger().info("Shutting down due to keyboard interrupt.")
     finally:
         tamir.disconnect_client()
         executor.shutdown()
         tamir.destroy_node()
-        tamir.vision.destroy_node()
         rclpy.shutdown()
 
 

@@ -1,0 +1,242 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-6ee4d8e70826196eab4f.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18
+					]
+				},
+				{
+					"build" : "tamir_interface__py",
+					"jsonFile" : "directory-tamir_interface__py-cbb8fc4ce86eadaa779e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.20"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/asaace00/repo/winter/project/build/tamir_interface/tamir_interface__py",
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1
+					],
+					"name" : "tamir_interface",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_build_tamir_interface_egg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_build_tamir_interface_egg-ce33cef8f9688da778a4.json",
+					"name" : "ament_cmake_python_build_tamir_interface_egg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_copy_tamir_interface::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_copy_tamir_interface-bbb3fc19257ccb94bc8e.json",
+					"name" : "ament_cmake_python_copy_tamir_interface",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface-82738f694aa0a664fbad.json",
+					"name" : "tamir_interface",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__cpp-733ba79d4257c6799a00.json",
+					"name" : "tamir_interface__cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "tamir_interface__py::@b5cea315882a7fef9c6f",
+					"jsonFile" : "target-tamir_interface__py-f3914d2516b1f6eae9a8.json",
+					"name" : "tamir_interface__py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_generator_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_generator_c-72b2c855900080bb0913.json",
+					"name" : "tamir_interface__rosidl_generator_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_generator_py::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_generator_py-56fe02d7db1ca52aaa88.json",
+					"name" : "tamir_interface__rosidl_generator_py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_generator_type_description::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_generator_type_description-6dd23bd35f0c3439f462.json",
+					"name" : "tamir_interface__rosidl_generator_type_description",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_typesupport_c-5dfd65ac2379026cb816.json",
+					"name" : "tamir_interface__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_typesupport_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_typesupport_cpp-e1b155f89d26c50b8c28.json",
+					"name" : "tamir_interface__rosidl_typesupport_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_typesupport_fastrtps_c-a4ed4864afc325f9662b.json",
+					"name" : "tamir_interface__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_typesupport_fastrtps_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_typesupport_fastrtps_cpp-2bb2917ca1a36fc25e5b.json",
+					"name" : "tamir_interface__rosidl_typesupport_fastrtps_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_typesupport_introspection_c-27541c9898aed953d58c.json",
+					"name" : "tamir_interface__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface__rosidl_typesupport_introspection_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface__rosidl_typesupport_introspection_cpp-ae9a5321c3203e71664b.json",
+					"name" : "tamir_interface__rosidl_typesupport_introspection_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface_s__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface_s__rosidl_typesupport_c-915d1e186f7dae998db4.json",
+					"name" : "tamir_interface_s__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface_s__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface_s__rosidl_typesupport_fastrtps_c-5c6c24f41972e073ade5.json",
+					"name" : "tamir_interface_s__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface_s__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface_s__rosidl_typesupport_introspection_c-15da3c772c6ba7dc1868.json",
+					"name" : "tamir_interface_s__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "tamir_interface_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-tamir_interface_uninstall-2237c5b384c169def96e.json",
+					"name" : "tamir_interface_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-5d6a623ee71c5b14f2f6.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/asaace00/repo/winter/project/build/tamir_interface",
+		"source" : "/home/asaace00/repo/winter/project/TAMIR/tamir_interface"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

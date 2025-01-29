@@ -28,11 +28,11 @@ def generate_launch_description():
         ),
 
         # Launch vision node
-        # Node(
-        #     package='tamir',
-        #     executable='vision',
-        #     output='screen',
-        # ),
+        Node(
+            package='tamir',
+            executable='vision',
+            output='screen',
+        ),
 
         # Launch Tamir interface node
         Node(

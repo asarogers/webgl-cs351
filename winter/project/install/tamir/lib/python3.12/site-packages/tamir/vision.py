@@ -26,7 +26,7 @@ from cv_bridge import CvBridge
 import cv2
 import numpy as np
 from ultralytics import YOLO
-
+from tamir_interface.msg import Behaviors, BehaviorList
 
 class YoloVisualizer(Node):
     def __init__(self):
@@ -70,6 +70,8 @@ class YoloVisualizer(Node):
         self.behavior= {
             "dogIsInBathroom" : False
         }
+
+        self.behaviorPublisher = self.create_publisher(BehaviorList, "behavior_msg", 10)
     
     def checkBehavior(self,class_name, x, y, z):
         # "3D Coordinates of {class_name}: x={x:.3f}, y={y:.3f}, z={z:.3f}"
@@ -145,6 +147,16 @@ class YoloVisualizer(Node):
                         self.logger("A different error")
             if self.behavior["dogIsInBathroom"]:
                 self.logger("****Dog found in bathroom")
+            msg = BehaviorList()
+
+            behavior = Behaviors()
+            behavior.name = "dogIsInBathroom"
+            behavior.state = self.behavior["dogIsInBathroom"]
+
+            msg.states = [behavior]
+
+            # msg.states = states = [behavior]
+            self.behaviorPublisher.publish(msg)
         
         # Display the result
         cv2.imshow('YOLO Detections with Depth', current_frame)
@@ -164,13 +176,13 @@ class YoloVisualizer(Node):
         return x, y, z
 
 
-# def main(args=None):
-#     rclpy.init(args=args)
-#     node = YoloVisualizer()
-#     rclpy.spin(node)
-#     rclpy.shutdown()
+def main(args=None):
+    rclpy.init(args=args)
+    node = YoloVisualizer()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
 
