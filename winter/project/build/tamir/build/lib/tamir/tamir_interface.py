@@ -106,8 +106,6 @@ class TamirInterface(Node):
             self.print("dog is in bathroom")
             # self.print(f"behavior = {self.behavior}")
             self.begin_corrective_signal()
-        else:
-            self.get_logger().info('No message received yet.')
 
 
     def listener_callback(self, msg):
