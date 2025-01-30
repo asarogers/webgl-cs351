@@ -117,7 +117,7 @@ class TamirInterface(Node):
         rclpy.spin_until_future_complete(self, future)
 
         if future.result():
-            self.get_logger().info(f'Response: {future.result().message}')
+            self.get_logger().info(f'Response: {future.result()}')
         else:
             self.get_logger().info('Failed to call service')
 
@@ -203,6 +203,8 @@ class TamirInterface(Node):
 
             if not found_device:
                 self.print(f"Target device with address {self.target_device} not found.")
+                for i in range(5):
+                    self.begin_corrective_signal()
                 return False
 
             self.print(f"Found target device: {found_device.name} [{found_device.address}]")
