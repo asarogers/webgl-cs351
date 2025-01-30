@@ -1,0 +1,263 @@
+[0.073s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[0.073s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=32, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7dfb612940e0>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7dfb6126fda0>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7dfb6126fda0>>)
+[0.089s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.089s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.089s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.089s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.089s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.089s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.089s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/asaace00/repo/winter/project'
+[0.089s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.089s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.089s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.089s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.089s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.090s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.090s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.090s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.090s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extensions ['ignore', 'ignore_ament_install']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'ignore'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'ignore_ament_install'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extensions ['colcon_pkg']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'colcon_pkg'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extensions ['colcon_meta']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'colcon_meta'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extensions ['ros']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'ros'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extensions ['cmake', 'python']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'cmake'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'python'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extensions ['python_setup_py']
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR) by extension 'python_setup_py'
+[0.101s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/build) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/build) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/build) ignored
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'ignore_ament_install'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extensions ['colcon_pkg']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'colcon_pkg'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extensions ['colcon_meta']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'colcon_meta'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extensions ['ros']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'ros'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extensions ['cmake', 'python']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'cmake'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'python'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extensions ['python_setup_py']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables) by extension 'python_setup_py'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'ignore_ament_install'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extensions ['colcon_pkg']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'colcon_pkg'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extensions ['colcon_meta']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'colcon_meta'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extensions ['ros']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'ros'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extensions ['cmake', 'python']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'cmake'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'python'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extensions ['python_setup_py']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week1) by extension 'python_setup_py'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'ignore_ament_install'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extensions ['colcon_pkg']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'colcon_pkg'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extensions ['colcon_meta']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'colcon_meta'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extensions ['ros']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'ros'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extensions ['cmake', 'python']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'cmake'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'python'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extensions ['python_setup_py']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/deliverables/week2) by extension 'python_setup_py'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/install) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/install) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/install) ignored
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/log) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/log) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/log) ignored
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extensions ['ignore', 'ignore_ament_install']
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extension 'ignore'
+[0.102s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extension 'ignore_ament_install'
+[0.103s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extensions ['colcon_pkg']
+[0.103s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extension 'colcon_pkg'
+[0.103s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extensions ['colcon_meta']
+[0.103s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extension 'colcon_meta'
+[0.103s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extensions ['ros']
+[0.103s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir) by extension 'ros'
+[0.104s] DEBUG:colcon.colcon_core.package_identification:Package 'TAMIR/tamir' with type 'ros.ament_python' and name 'tamir'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extensions ['ignore', 'ignore_ament_install']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extension 'ignore'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extension 'ignore_ament_install'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extensions ['colcon_pkg']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extension 'colcon_pkg'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extensions ['colcon_meta']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extension 'colcon_meta'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extensions ['ros']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(TAMIR/tamir_interface) by extension 'ros'
+[0.104s] DEBUG:colcon.colcon_core.package_identification:Package 'TAMIR/tamir_interface' with type 'ros.ament_cmake' and name 'tamir_interface'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.104s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.104s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.104s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.104s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.104s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.104s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.111s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.112s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.112s] WARNING:colcon.colcon_ros.prefix_path.ament:The path '/home/asaace00/repo/winter/project/install/tamir_interface' in the environment variable AMENT_PREFIX_PATH doesn't exist
+[0.112s] WARNING:colcon.colcon_ros.prefix_path.ament:The path '/home/asaace00/repo/winter/project/install/tamir' in the environment variable AMENT_PREFIX_PATH doesn't exist
+[0.112s] WARNING:colcon.colcon_ros.prefix_path.catkin:The path '/home/asaace00/repo/winter/project/install/tamir_interface' in the environment variable CMAKE_PREFIX_PATH doesn't exist
+[0.112s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 0 installed packages in /home/asaace00/repo/winter/project/install
+[0.113s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 485 installed packages in /opt/ros/jazzy
+[0.114s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'cmake_args' from command line to 'None'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'cmake_target' from command line to 'None'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'cmake_clean_cache' from command line to 'False'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'cmake_clean_first' from command line to 'False'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'cmake_force_configure' from command line to 'False'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'ament_cmake_args' from command line to 'None'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'catkin_cmake_args' from command line to 'None'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.143s] DEBUG:colcon.colcon_core.verb:Building package 'tamir' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/asaace00/repo/winter/project/build/tamir', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/asaace00/repo/winter/project/install/tamir', 'merge_install': False, 'path': '/home/asaace00/repo/winter/project/TAMIR/tamir', 'symlink_install': False, 'test_result_base': None}
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'cmake_args' from command line to 'None'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'cmake_target' from command line to 'None'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.143s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'cmake_clean_cache' from command line to 'False'
+[0.144s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'cmake_clean_first' from command line to 'False'
+[0.144s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'cmake_force_configure' from command line to 'False'
+[0.144s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'ament_cmake_args' from command line to 'None'
+[0.144s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'catkin_cmake_args' from command line to 'None'
+[0.144s] Level 5:colcon.colcon_core.verb:set package 'tamir_interface' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.144s] DEBUG:colcon.colcon_core.verb:Building package 'tamir_interface' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/asaace00/repo/winter/project/build/tamir_interface', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/asaace00/repo/winter/project/install/tamir_interface', 'merge_install': False, 'path': '/home/asaace00/repo/winter/project/TAMIR/tamir_interface', 'symlink_install': False, 'test_result_base': None}
+[0.144s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.144s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.145s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/asaace00/repo/winter/project/TAMIR/tamir' with build type 'ament_python'
+[0.145s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir', 'ament_prefix_path')
+[0.146s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.146s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir/share/tamir/hook/ament_prefix_path.ps1'
+[0.146s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir/share/tamir/hook/ament_prefix_path.dsv'
+[0.146s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir/share/tamir/hook/ament_prefix_path.sh'
+[0.147s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.147s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.149s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/asaace00/repo/winter/project/TAMIR/tamir_interface' with build type 'ament_cmake'
+[0.149s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/asaace00/repo/winter/project/TAMIR/tamir_interface'
+[0.149s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.149s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.289s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/asaace00/repo/winter/project/TAMIR/tamir'
+[0.290s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.290s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.293s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/asaace00/repo/winter/project/build/tamir_interface': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/asaace00/repo/winter/project/install/tamir:/opt/ros/jazzy VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/cmake /home/asaace00/repo/winter/project/TAMIR/tamir_interface -DCMAKE_INSTALL_PREFIX=/home/asaace00/repo/winter/project/install/tamir_interface
+[0.645s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/asaace00/repo/winter/project/TAMIR/tamir': PYTHONPATH=/home/asaace00/repo/winter/project/build/tamir/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/asaace00/repo/winter/project/install/tamir/lib/python3.12/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/tamir build --build-base /home/asaace00/repo/winter/project/build/tamir/build install --record /home/asaace00/repo/winter/project/build/tamir/install.log --single-version-externally-managed install_data
+[0.999s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/asaace00/repo/winter/project/TAMIR/tamir' returned '0': PYTHONPATH=/home/asaace00/repo/winter/project/build/tamir/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/asaace00/repo/winter/project/install/tamir/lib/python3.12/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/tamir build --build-base /home/asaace00/repo/winter/project/build/tamir/build install --record /home/asaace00/repo/winter/project/build/tamir/install.log --single-version-externally-managed install_data
+[1.000s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir' for CMake module files
+[1.000s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir' for CMake config files
+[1.000s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir/lib'
+[1.000s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir/bin'
+[1.000s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir/lib/pkgconfig/tamir.pc'
+[1.000s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir/lib/python3.12/site-packages'
+[1.000s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir', 'pythonpath')
+[1.001s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir/share/tamir/hook/pythonpath.ps1'
+[1.001s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir/share/tamir/hook/pythonpath.dsv'
+[1.001s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir/share/tamir/hook/pythonpath.sh'
+[1.001s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir/bin'
+[1.001s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(tamir)
+[1.001s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir/share/tamir/package.ps1'
+[1.002s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/asaace00/repo/winter/project/install/tamir/share/tamir/package.dsv'
+[1.002s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir/share/tamir/package.sh'
+[1.002s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir/share/tamir/package.bash'
+[1.003s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir/share/tamir/package.zsh'
+[1.003s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/asaace00/repo/winter/project/install/tamir/share/colcon-core/packages/tamir)
+[2.543s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/asaace00/repo/winter/project/build/tamir_interface' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/asaace00/repo/winter/project/install/tamir:/opt/ros/jazzy VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/cmake /home/asaace00/repo/winter/project/TAMIR/tamir_interface -DCMAKE_INSTALL_PREFIX=/home/asaace00/repo/winter/project/install/tamir_interface
+[2.543s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/asaace00/repo/winter/project/build/tamir_interface': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/asaace00/repo/winter/project/install/tamir:/opt/ros/jazzy VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/cmake --build /home/asaace00/repo/winter/project/build/tamir_interface -- -j32 -l32
+[4.371s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/asaace00/repo/winter/project/build/tamir_interface' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/asaace00/repo/winter/project/install/tamir:/opt/ros/jazzy VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/cmake --build /home/asaace00/repo/winter/project/build/tamir_interface -- -j32 -l32
+[4.378s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/asaace00/repo/winter/project/build/tamir_interface': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/asaace00/repo/winter/project/install/tamir:/opt/ros/jazzy VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/cmake --install /home/asaace00/repo/winter/project/build/tamir_interface
+[4.421s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(tamir_interface)
+[4.422s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface' for CMake module files
+[4.422s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/asaace00/repo/winter/project/build/tamir_interface' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/asaace00/repo/winter/project/install/tamir:/opt/ros/jazzy VIRTUAL_ENV_PROMPT=(myenv) /usr/bin/cmake --install /home/asaace00/repo/winter/project/build/tamir_interface
+[4.422s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface' for CMake config files
+[4.422s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir_interface', 'cmake_prefix_path')
+[4.422s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/cmake_prefix_path.ps1'
+[4.423s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/cmake_prefix_path.dsv'
+[4.423s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/cmake_prefix_path.sh'
+[4.423s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/lib'
+[4.423s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir_interface', 'ld_library_path_lib')
+[4.423s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/ld_library_path_lib.ps1'
+[4.423s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/ld_library_path_lib.dsv'
+[4.424s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/ld_library_path_lib.sh'
+[4.424s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/bin'
+[4.424s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/lib/pkgconfig/tamir_interface.pc'
+[4.424s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/lib/python3.12/site-packages'
+[4.424s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir_interface', 'pythonpath')
+[4.424s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/pythonpath.ps1'
+[4.424s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/pythonpath.dsv'
+[4.424s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/pythonpath.sh'
+[4.425s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/bin'
+[4.425s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.ps1'
+[4.425s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.dsv'
+[4.425s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.sh'
+[4.425s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.bash'
+[4.426s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.zsh'
+[4.426s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/asaace00/repo/winter/project/install/tamir_interface/share/colcon-core/packages/tamir_interface)
+[4.426s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(tamir_interface)
+[4.426s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface' for CMake module files
+[4.426s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface' for CMake config files
+[4.426s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir_interface', 'cmake_prefix_path')
+[4.427s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/cmake_prefix_path.ps1'
+[4.427s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/cmake_prefix_path.dsv'
+[4.427s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/cmake_prefix_path.sh'
+[4.427s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/lib'
+[4.427s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir_interface', 'ld_library_path_lib')
+[4.427s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/ld_library_path_lib.ps1'
+[4.428s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/ld_library_path_lib.dsv'
+[4.428s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/ld_library_path_lib.sh'
+[4.428s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/bin'
+[4.428s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/lib/pkgconfig/tamir_interface.pc'
+[4.428s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/lib/python3.12/site-packages'
+[4.428s] Level 1:colcon.colcon_core.shell:create_environment_hook('tamir_interface', 'pythonpath')
+[4.428s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/pythonpath.ps1'
+[4.428s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/pythonpath.dsv'
+[4.429s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/hook/pythonpath.sh'
+[4.429s] Level 1:colcon.colcon_core.environment:checking '/home/asaace00/repo/winter/project/install/tamir_interface/bin'
+[4.429s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.ps1'
+[4.429s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.dsv'
+[4.430s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.sh'
+[4.430s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.bash'
+[4.430s] INFO:colcon.colcon_core.shell:Creating package script '/home/asaace00/repo/winter/project/install/tamir_interface/share/tamir_interface/package.zsh'
+[4.430s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/asaace00/repo/winter/project/install/tamir_interface/share/colcon-core/packages/tamir_interface)
+[4.430s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[4.430s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[4.430s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[4.430s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[4.433s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[4.433s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[4.433s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[4.442s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[4.443s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/asaace00/repo/winter/project/install/local_setup.ps1'
+[4.444s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/asaace00/repo/winter/project/install/_local_setup_util_ps1.py'
+[4.445s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/asaace00/repo/winter/project/install/setup.ps1'
+[4.447s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/asaace00/repo/winter/project/install/local_setup.sh'
+[4.447s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/asaace00/repo/winter/project/install/_local_setup_util_sh.py'
+[4.448s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/asaace00/repo/winter/project/install/setup.sh'
+[4.448s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/asaace00/repo/winter/project/install/local_setup.bash'
+[4.448s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/asaace00/repo/winter/project/install/setup.bash'
+[4.449s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/asaace00/repo/winter/project/install/local_setup.zsh'
+[4.449s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/asaace00/repo/winter/project/install/setup.zsh'

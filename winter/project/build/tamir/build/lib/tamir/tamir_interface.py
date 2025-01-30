@@ -102,10 +102,10 @@ class TamirInterface(Node):
     
     def process_latest_message(self):
         """Process the latest message once every second."""
-        if self.behavior:
+        if hasattr(self.behavior, "state") and self.behavior.state:
             self.print("dog is in bathroom")
-            self.print(f"behavior = {self.behavior}")
-            # self.begin_corrective_signal()
+            # self.print(f"behavior = {self.behavior}")
+            self.begin_corrective_signal()
         else:
             self.get_logger().info('No message received yet.')
 
