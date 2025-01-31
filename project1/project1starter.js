@@ -158,6 +158,8 @@ function draw() {
 
     // draw the grid
     gl.drawArrays(gl.LINES, g_teapotMesh.length / 3, g_gridMesh.length / 3)
+    console.log(g_teapotMesh.length / 3)
+    console.log(g_gridMesh.length / 3)
 }
 
 // Helper to construct colors

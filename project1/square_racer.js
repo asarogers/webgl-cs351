@@ -22,14 +22,15 @@ const FSHADER_SOURCE = `
 
 // references to general information
 var g_canvas
-var gl
 var g_lastFrameMS
-var firstBuffer, secondBuffer
+var gl
+var bufferInfo
 
 // GLSL uniform references
 var g_u_model_ref
 var g_u_world_ref
 var g_u_camera_ref
+var g_gridMesh
 
 // usual model/world matrices
 var g_modelMatrix
@@ -37,56 +38,29 @@ var g_second_modelMatrix
 var g_third_modelMatrix
 var g_worldMatrix
 
-// the current axis of rotation
-var g_rotationAxis
-
-
 // camera projection values
 var g_camera_x
 var g_camera_y
 var g_camera_z
 var g_near
 
-// Unit cube mesh, size 1, oriented around zero
-// TODO: replace with your mesh :)
-class Square{
-    constructor(VERTICES){
+// Grid constants
+const GRID_X_RANGE = 10  // Reduced from 1000 for better performance
+const GRID_Z_RANGE = 10
+const GRID_Y_OFFSET = -0.5
+
+class Square {
+    constructor(VERTICES) {
         this.VERTICES = VERTICES;
         this.VERTEX_COUNT = VERTICES.length / 3;
         this.TRIANGLE_SIZE = 3;
-        this.COLOR_BUFFER = null;
-        this.BUFFER = null
-        this.SPEED = 0
-        this.COLORS = null
-
-    }
-
-    bind(buffer, colorBuffer, colors){
-        this.COLOR_BUFFER = colorBuffer;
-        this.BUFFER = buffer;
-        this.COLORS = colors
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.BUFFER);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.VERTICES), gl.STATIC_DRAW);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.COLOR_BUFFER);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.COLORS), gl.STATIC_DRAW);
-    }
-
-    changeColor(colors){
-        this.COLORS = colors
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.BUFFER);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.VERTICES), gl.STATIC_DRAW);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.COLOR_BUFFER);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.COLORS), gl.STATIC_DRAW);
+        this.SPEED = 0;
+        this.COLORS = null;
     }
 }
 
-
-const TRIANGLE_SIZE = 3
-const FLOAT_SIZE = 4
-
+const TRIANGLE_SIZE = 3;
+const FLOAT_SIZE = 4;
 
 const movement = Object.freeze({
     HORIZONTAL: "horizontal",
@@ -94,66 +68,94 @@ const movement = Object.freeze({
     TEST: "test",
     ROTATE: "rotate",
     RESET: "reset"
-})
+});
 
-firstSquare = new Square(generateSquareFromVertex(0.5))
-secondSquare = new Square(generateSquareFromVertex(0.5))
-thirdSquare = new Square(generateSquareFromVertex(0.5))
+let firstSquare = new Square(generateSquareFromVertex(0.5));
+let secondSquare = new Square(generateSquareFromVertex(0.5));
+let thirdSquare = new Square(generateSquareFromVertex(0.5));
 
 var translate_time;
 
 var data = {}
+var translate_time;
+var g_rotationAxis;
+
 function main() {
-    g_canvas = document.getElementById('canvas')
-    // Get the rendering context for WebGL
-    gl = getWebGLContext(g_canvas, true)
+    g_canvas = document.getElementById('canvas');
+    gl = getWebGLContext(g_canvas, true);
     if (!gl) {
-        console.log('Failed to get the rendering context for WebGL')
-        return
+        console.log('Failed to get the rendering context for WebGL');
+        return;
     }
 
-    // Initialize GPU's vertex and fragment shaders programs
     if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
-        console.log('Failed to intialize shaders.')
-        return
+        console.log('Failed to initialize shaders.');
+        return;
     }
-    // Get references to GLSL uniforms
-    g_u_model_ref = gl.getUniformLocation(gl.program, 'u_Model')
-    g_u_world_ref = gl.getUniformLocation(gl.program, 'u_World')
-    g_u_camera_ref = gl.getUniformLocation(gl.program, 'u_Camera')
-    g_u_projection_ref = gl.getUniformLocation(gl.program, 'u_Projection')
 
-    // initialize the VBO
-    initBuffers();
-    reset()
+    g_u_model_ref = gl.getUniformLocation(gl.program, 'u_Model');
+    g_u_world_ref = gl.getUniformLocation(gl.program, 'u_World');
+    g_u_camera_ref = gl.getUniformLocation(gl.program, 'u_Camera');
+    g_u_projection_ref = gl.getUniformLocation(gl.program, 'u_Projection');
+
+    bufferInfo = initBuffers();
+    if (!bufferInfo) {
+        console.log('Failed to initialize buffers');
+        return;
+    }
+
+    reset();
+    gl.enable(gl.CULL_FACE);
     
-    // Enable Culling
-    gl.enable(gl.CULL_FACE)
-
-    // Setup for ticks
-    g_lastFrameMS = Date.now()
-    g_rotationAxis = [0, 0, 0]
-    setupCamera()
-    updateRotation()
-    tick()
+    g_lastFrameMS = Date.now();
+    g_rotationAxis = [0, 0, 0];
+    setupCamera();
+    updateRotation();
+    tick();
 }
 
 function initBuffers() {
-    let vertexBuffer1 = gl.createBuffer();
-    var colors = buildColorAttributes(firstSquare.VERTEX_COUNT);
-    let colorBuffer1 = gl.createBuffer();
-    firstSquare.bind(vertexBuffer1, colorBuffer1, colors)
+    // Create combined data arrays
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES
+    ];
+    
+    let gridInfo = buildGridAttributes(1, 1, [0.0, 1.0, 0.0]);
+    g_gridMesh = gridInfo[0];
+    vertices = [...vertices, ...g_gridMesh];
 
-    let vertexBuffer2 = gl.createBuffer();
-    var colors = buildColorAttributes(secondSquare.VERTEX_COUNT);
-    let colorBuffer2 = gl.createBuffer();
-    secondSquare.bind(vertexBuffer2, colorBuffer2, colors)
+    // Create colors for all shapes
+    let colors = [
+        ...buildColorAttributes(firstSquare.VERTEX_COUNT),
+        ...buildColorAttributes(secondSquare.VERTEX_COUNT),
+        ...buildColorAttributes(thirdSquare.VERTEX_COUNT),
+        ...gridInfo[1]
+    ];
 
-    let vertexBuffer3 = gl.createBuffer();
-    var colors = buildColorAttributes(thirdSquare.VERTEX_COUNT);
-    let colorBuffer3 = gl.createBuffer();
-    thirdSquare.bind(vertexBuffer3, colorBuffer3, colors)
+    // Create and bind single VBO
+    let VBO = gl.createBuffer();
+    if (!VBO) {
+        console.log('Failed to create buffer');
+        return null;
+    }
 
+    // Combine vertices and colors
+    let combinedData = new Float32Array([...vertices, ...colors]);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
+    gl.bufferData(gl.ARRAY_BUFFER, combinedData, gl.STATIC_DRAW);
+
+    return {
+        buffer: VBO,
+        vertexOffset: 0,
+        colorOffset: vertices.length * FLOAT_SIZE,
+        firstSquareCount: firstSquare.VERTEX_COUNT,
+        secondSquareCount: secondSquare.VERTEX_COUNT,
+        thirdSquareCount: thirdSquare.VERTEX_COUNT,
+        gridCount: g_gridMesh.length / 3
+    };
 }
 
 
@@ -163,40 +165,60 @@ var ROTATION_SPEED = .05
 
 // function to apply all the logic for a single frame tick
 function tick() {
-    // time since the last frame
-    var deltaTime
+    var deltaTime = Date.now() - g_lastFrameMS;
+    g_lastFrameMS = Date.now();
 
-    // calculate deltaTime
-    var current_time = Date.now()
-    deltaTime = current_time - g_lastFrameMS
-    g_lastFrameMS = current_time
+    let angle = ROTATION_SPEED * deltaTime;
+    g_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis));
+    g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...g_rotationAxis));
+    g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...g_rotationAxis));
 
-    // rotate the arm constantly around the given axis (of the model)
-    angle = ROTATION_SPEED * deltaTime 
-    g_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis))
-    g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...g_rotationAxis))
-    g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...g_rotationAxis))
-
-    translate_time += deltaTime
-    if (translate_time >= 3000){
-        translate_time = 0
-        reset_moving_shapes()
-
-        setSpeed()
-        changeColor()
+    translate_time += deltaTime;
+    if (translate_time >= 3000) {
+        translate_time = 0;
+        reset_moving_shapes();
+        setSpeed();
+        updateColors();
     }
-    
-    // console.log(g_second_modelMatrix)
 
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, -secondSquare.SPEED);
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, -thirdSquare.SPEED);
 
-
-    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, -secondSquare.SPEED)
-    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, -thirdSquare.SPEED)
-    
-
-    draw()
-    requestAnimationFrame(tick, g_canvas)
+    draw();
+    requestAnimationFrame(tick);
 }
+
+
+
+function buildGridAttributes(grid_row_spacing, grid_column_spacing, grid_color) {
+    var mesh = []
+    var colors = []
+
+    // Construct the rows
+    for (var x = -GRID_X_RANGE; x < GRID_X_RANGE; x += grid_row_spacing) {
+        // two vertices for each line
+        // one at -Z and one at +Z
+        mesh.push(x, 0, -GRID_Z_RANGE)
+        mesh.push(x, 0, GRID_Z_RANGE)
+    }
+
+    // Construct the columns extending "outward" from the camera
+    for (var z = -GRID_Z_RANGE; z < GRID_Z_RANGE; z += grid_column_spacing) {
+        // two vertices for each line
+        // one at -Z and one at +Z
+        mesh.push(-GRID_X_RANGE, 0, z)
+        mesh.push(GRID_X_RANGE, 0, z)
+    }
+
+    // We need one color per vertex
+    // since we have 3 components for each vertex, this is length/3
+    for (var i = 0; i < mesh.length / 3; i++) {
+        colors.push(grid_color[0], grid_color[1], grid_color[2])
+    }
+
+    return [mesh, colors]
+}
+
 
 function changeColor(){
     var colors = buildColorAttributes(firstSquare.VERTEX_COUNT);
@@ -221,23 +243,66 @@ function setSpeed(){
 
 // draw to the screen on the next frame
 function draw() {
-    var cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z)
-    var projection_matrix = new Matrix4().setOrtho(-1, 1, -1, 1, g_near, 2)
+    const cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z);
+    const projection_matrix = new Matrix4().setOrtho(-1, 1, -1, 1, g_near, 2);
 
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
+
+    // Set up position attribute
+    setupVec3('a_Position', 0, bufferInfo.vertexOffset);
     
+    // Set up color attribute
+    setupVec3('a_Color', 0, bufferInfo.colorOffset);
 
+    // Draw first square
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_modelMatrix.elements);
+    gl.uniformMatrix4fv(g_u_world_ref, false, g_worldMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, 0, bufferInfo.firstSquareCount);
 
+    // Draw second square
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_second_modelMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, bufferInfo.firstSquareCount, 
+                 bufferInfo.secondSquareCount);
 
+    // Draw third square
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_third_modelMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, 
+                 bufferInfo.firstSquareCount + bufferInfo.secondSquareCount,
+                 bufferInfo.thirdSquareCount);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
+    // Draw grid
+    gl.uniformMatrix4fv(g_u_model_ref, false, new Matrix4().elements);
+    gl.uniformMatrix4fv(g_u_world_ref, false, 
+                       new Matrix4().translate(0, GRID_Y_OFFSET, 0).elements);
+    gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements);
+    gl.uniformMatrix4fv(g_u_projection_ref, false, projection_matrix.elements);
+    
+    gl.drawArrays(gl.LINES, 
+                 bufferInfo.firstSquareCount + bufferInfo.secondSquareCount + 
+                 bufferInfo.thirdSquareCount,
+                 bufferInfo.gridCount);
+}
 
-    drawShape(g_modelMatrix.elements, g_worldMatrix.elements, firstSquare);
-    drawShape(g_second_modelMatrix.elements, g_worldMatrix.elements, secondSquare);
-    drawShape(g_third_modelMatrix.elements, g_worldMatrix.elements, thirdSquare);
+function updateColors() {
+    const vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_gridMesh
+    ];
 
-    gl.uniformMatrix4fv(g_u_projection_ref, false, projection_matrix.elements)
-    gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements)
+    const colors = [
+        ...buildColorAttributes(firstSquare.VERTEX_COUNT),
+        ...buildColorAttributes(secondSquare.VERTEX_COUNT),
+        ...buildColorAttributes(thirdSquare.VERTEX_COUNT),
+        ...buildGridAttributes(1, 1, [0.0, 1.0, 0.0])[1]
+    ];
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
 }
 
 function setupCamera(){
@@ -288,7 +353,7 @@ function drawShape(model, world, shape) {
 function buildColorAttributes(vertex_count) {
 
     const color1 = [Math.random(), Math.random(), Math.random()];
-    const color2 = [0.6, 0.4, 0.2];
+    const color2 = [Math.random(), Math.random(), Math.random()];
     let colors = [];
     for (let i = 0; i < vertex_count; i++) {
         randomNumber = Math.floor(Math.random() * 10) + 1;
