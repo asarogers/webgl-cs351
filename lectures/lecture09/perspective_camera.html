@@ -5,7 +5,7 @@
 
 <header>
     <!-- Sets an icon for the page -->
-    <!-- <link rel="icon" type="image/x-icon" href="/resources/favicon.ico"> -->
+    <link rel="icon" type="image/x-icon" href="/resources/favicon.ico">
 </header>
 
 <body onload="main()">
@@ -15,40 +15,15 @@
     <script src="lib/cuon-utils.js"></script>
     <script src="lib/cuon-matrix-quat03.js"></script>
 
-
     <!-- Select a JavaScript file -->
-    <script src="project1starter.js"></script>
+    <script src="perspective_camera.js"></script>
 
     <!-- Setup the Canvas -->
     <canvas id="canvas" width="400" height="400">
         Please use a browser that supports "canvas"
     </canvas>
 
-    <!-- <div>
-        <input type="range" id="sliderNear" min="-1" max="5" step=".01" value="1" />
-        <label id="near" for="sliderNear"></label>
-    </div>
-    <div>
-        <input type="range" id="sliderFar" min="-1" max="5" step=".01" value="4" />
-        <label id="far" for="sliderFar"></label>
-    </div> -->
-    <div>
-        <input type="range" id="sliderLeft" min="-3" max="3" step=".01" />
-        <label id="left" for="sliderLeft"></label>
-    </div>
-    <div>
-        <input type="range" id="sliderRight" min="-3" max="3" step=".01" />
-        <label id="right" for="sliderRight"></label>
-    </div>
-    <div>
-        <input type="range" id="sliderBottom" min="-3" max="3" step=".01" />
-        <label id="bottom" for="sliderBottom"></label>
-    </div>
-    <div>
-        <input type="range" id="sliderTop" min="-3" max="3" step=".01" />
-        <label id="top" for="sliderTop"></label>
-    </div>
-
+    <!-- Add camera controls -->
     <div>
         <input type="range" id="sliderFOVY" min="1" max="360" step=".01" value="90" />
         <label id="fovy" for="sliderFOVY"></label>
@@ -58,13 +33,14 @@
         <label id="aspect" for="sliderAspect"></label>
     </div>
     <div>
-        <input type="range" id="sliderNear" min="0" max="1" step=".01" value="1" />
+        <input type="range" id="sliderNear" min="-1" max="5" step=".01" value="1" />
         <label id="near" for="sliderNear"></label>
     </div>
     <div>
         <input type="range" id="sliderFar" min="-1" max="5" step=".01" value="2" />
         <label id="far" for="sliderFar"></label>
     </div>
+
 
 </body>
 
