@@ -57,6 +57,7 @@ var first_square_scale = 0.15
 var other_box_scale = 0.25
 var isOrth = true
 
+
 // Grid constants
 const GRID_X_RANGE = 10  // Reduced from 1000 for better performance
 const GRID_Z_RANGE = 10
@@ -83,9 +84,9 @@ const movement = Object.freeze({
     RESET: "reset"
 });
 
-let firstSquare = new Square(generateSquareFromVertex(0.5));
-let secondSquare = new Square(generateSquareFromVertex(0.5));
-let thirdSquare = new Square(generateSquareFromVertex(0.5));
+let firstSquare = new Square(generateSpaceship(0.5));
+let secondSquare = new Square(generateSpaceship(0.5));
+let thirdSquare = new Square(generateSpaceship(0.5));
 
 var translate_time;
 
@@ -180,7 +181,7 @@ function initBuffers() {
 var ROTATION_SPEED = .05
 
 
-// function to apply all the logic for a single frame tick
+
 function tick() {
     var deltaTime = Date.now() - g_lastFrameMS;
     g_lastFrameMS = Date.now();
@@ -589,9 +590,11 @@ function reset_moving_shapes(){
     g_second_modelMatrix = g_second_modelMatrix.setScale(other_box_scale, other_box_scale, other_box_scale)
     g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, 1)
     g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.VERTICAL, 0.5)
+    g_second_modelMatrix.rotate(90, 0, 0,1 )
 
     g_third_modelMatrix = new Matrix4()
     g_third_modelMatrix = g_third_modelMatrix.setScale(other_box_scale, other_box_scale, other_box_scale)
     g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, 1)
     g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.VERTICAL, -0.5)
+    g_third_modelMatrix.rotate(90, 0, 0,1 )
 }

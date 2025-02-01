@@ -7,8 +7,9 @@ const VSHADER_SOURCE = `
     uniform mat4 u_Camera;
     attribute vec3 a_Color;
     varying vec3 v_Color;
+    uniform mat4 u_Projection;
     void main() {
-        gl_Position = u_Camera * u_World * u_Model * vec4(a_Position, 1.0);
+        gl_Position = u_Projection * u_Camera * u_World * u_Model * vec4(a_Position, 1.0);
         v_Color = a_Color;
     }
 `
@@ -42,7 +43,20 @@ var g_worldMatrix
 var g_camera_x
 var g_camera_y
 var g_camera_z
+
+// camera projection values
+var g_near_orth
+var g_far_orth
 var g_near
+var g_far
+var g_left
+var g_right
+var g_top
+var g_bottom
+var first_square_scale = 0.15
+var other_box_scale = 0.25
+var isOrth = true
+
 
 // Grid constants
 const GRID_X_RANGE = 10  // Reduced from 1000 for better performance
@@ -70,9 +84,9 @@ const movement = Object.freeze({
     RESET: "reset"
 });
 
-let firstSquare = new Square(generateSquareFromVertex(0.5));
-let secondSquare = new Square(generateSquareFromVertex(0.5));
-let thirdSquare = new Square(generateSquareFromVertex(0.5));
+let firstSquare = new Square(generateSpaceship(0.5));
+let secondSquare = new Square(generateSpaceship(0.5));
+let thirdSquare = new Square(generateSpaceship(0.5));
 
 var translate_time;
 
@@ -83,6 +97,7 @@ var g_rotationAxis;
 function main() {
     g_canvas = document.getElementById('canvas');
     gl = getWebGLContext(g_canvas, true);
+
     if (!gl) {
         console.log('Failed to get the rendering context for WebGL');
         return;
@@ -103,6 +118,9 @@ function main() {
         console.log('Failed to initialize buffers');
         return;
     }
+
+
+
 
     reset();
     gl.enable(gl.CULL_FACE);
@@ -163,7 +181,7 @@ function initBuffers() {
 var ROTATION_SPEED = .05
 
 
-// function to apply all the logic for a single frame tick
+
 function tick() {
     var deltaTime = Date.now() - g_lastFrameMS;
     g_lastFrameMS = Date.now();
@@ -244,7 +262,12 @@ function setSpeed(){
 // draw to the screen on the next frame
 function draw() {
     const cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z);
-    const projection_matrix = new Matrix4().setOrtho(-1, 1, -1, 1, g_near, 2);
+    var projection_matrix
+    if (isOrth){
+        projection_matrix = new Matrix4().setOrtho(g_left, g_right, g_bottom, g_top, g_near_orth, g_far_orth)
+    }else{
+        projection_matrix = new Matrix4().setPerspective(g_fovy, g_aspect, g_near, g_far)
+    }
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -319,16 +342,62 @@ function setupCamera(){
         updateCameraZ(event.target.value)
     })
 
+    slider_input = document.getElementById('orth_sliderNear')
+    slider_input.addEventListener('input', (event) => {
+        updateNear_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderFar')
+    slider_input.addEventListener('input', (event) => {
+        updateFar_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderLeft')
+    slider_input.addEventListener('input', (event) => {
+        updateLeft_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderRight')
+    slider_input.addEventListener('input', (event) => {
+        updateRight_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderTop')
+    slider_input.addEventListener('input', (event) => {
+        updateTop_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderBottom')
+    slider_input.addEventListener('input', (event) => {
+        updateBottom_orth(event.target.value)
+    })
+
+
+    slider_input = document.getElementById('sliderFOVY')
+    slider_input.addEventListener('input', (event) => {
+        updateFOVY_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('sliderAspect')
+    slider_input.addEventListener('input', (event) => {
+        updateAspect(event.target.value)
+    })
+
     slider_input = document.getElementById('sliderNear')
     slider_input.addEventListener('input', (event) => {
         updateNear(event.target.value)
     })
 
+    slider_input = document.getElementById('sliderFar')
+    slider_input.addEventListener('input', (event) => {
+        updateFar(event.target.value)
+    })
+
     updateCameraX(0)
     updateCameraY(0)
-    updateCameraZ(0)
+    updateCameraZ(0.25)
 
-    updateNear(1)
+
 }
 
 function drawShape(model, world, shape) {
@@ -379,10 +448,40 @@ function updateRotation() {
     g_rotationAxis[2] = Number(rotateZ.checked)
 }
 
-function updateNear(amount) {
-    label = document.getElementById('near')
-    label.textContent = `Near: ${Number(amount).toFixed(2)}`
-    g_near = Number(amount)
+function updateNear_orth(amount) {
+    label = document.getElementById('orth_near')
+    label.textContent = `orth_Near: ${Number(amount).toFixed(2)}`
+    g_near_orth = Number(amount)
+}
+
+function updateFar_orth(amount) {
+    label = document.getElementById('orth_far')
+    label.textContent = `orth_Far: ${Number(amount).toFixed(2)}`
+    g_far_orth = Number(amount)
+}
+
+function updateLeft_orth(amount) {
+    label = document.getElementById('orth_left')
+    label.textContent = `orth_Left: ${Number(amount).toFixed(2)}`
+    g_left = Number(amount)
+}
+
+function updateRight_orth(amount) {
+    label = document.getElementById('orth_right')
+    label.textContent = `orth_Right: ${Number(amount).toFixed(2)}`
+    g_right = Number(amount)
+}
+
+function updateBottom_orth(amount) {
+    label = document.getElementById('orth_bottom')
+    label.textContent = `orth_Bottom: ${Number(amount).toFixed(2)}`
+    g_bottom = Number(amount)
+}
+
+function updateTop_orth(amount) {
+    label = document.getElementById('orth_top')
+    label.textContent = `orth_Top: ${Number(amount).toFixed(2)}`
+    g_top = Number(amount)
 }
 
 
@@ -400,6 +499,30 @@ function updateCameraZ(amount) {
     label = document.getElementById('cameraZ')
     label.textContent = `Camera Z: ${Number(amount).toFixed(2)}`
     g_camera_z = Number(amount)
+}
+
+function updateFOVY(amount) {
+    label = document.getElementById('fovy')
+    label.textContent = `FOVY: ${Number(amount).toFixed(2)}`
+    g_fovy = Number(amount)
+}
+
+function updateAspect(amount) {
+    label = document.getElementById('aspect')
+    label.textContent = `Aspect: ${Number(amount).toFixed(2)}`
+    g_aspect = Number(amount)
+}
+
+function updateNear(amount) {
+    label = document.getElementById('near')
+    label.textContent = `Near: ${Number(amount).toFixed(2)}`
+    g_near = Number(amount)
+}
+
+function updateFar(amount) {
+    label = document.getElementById('far')
+    label.textContent = `Far: ${Number(amount).toFixed(2)}`
+    g_far = Number(amount)
 }
 
 
@@ -421,14 +544,18 @@ function moveUp(){
 
 function moveDown(){
     g_modelMatrix = move3DShape(g_modelMatrix, movement.VERTICAL, -0.5)
-}
+}   
 
 function reset(){
     translate_time = 0
     g_modelMatrix = new Matrix4()
     g_worldMatrix = new Matrix4()
     g_modelMatrix = move3DShape(g_modelMatrix, movement.RESET, ID_MATRIX)
-    g_modelMatrix = g_modelMatrix.setScale(.15, .15, .15)
+    g_modelMatrix = g_modelMatrix.setScale(first_square_scale, first_square_scale, first_square_scale)
+
+    setOrth()
+    setPerspective()
+
     setSpeed()
 
 
@@ -436,14 +563,38 @@ function reset(){
 
 }
 
+function switchPerspective(){
+    isOrth = !isOrth
+    other_box_scale = 0.15
+    first_square_scale = 0.25
+}
+
+function setPerspective(){
+    updateFOVY(168)
+    updateAspect(1)
+    updateNear(1)
+    updateFar(.11)
+}
+
+function setOrth(){
+    updateNear_orth(1)
+    updateFar_orth(-1)
+    updateLeft_orth(-1)
+    updateRight_orth(1)
+    updateBottom_orth(-1)
+    updateTop_orth(1)
+}
+
 function reset_moving_shapes(){
     g_second_modelMatrix = new Matrix4()
-    g_second_modelMatrix = g_second_modelMatrix.setScale(0.25, 0.25, 0.25)
+    g_second_modelMatrix = g_second_modelMatrix.setScale(other_box_scale, other_box_scale, other_box_scale)
     g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, 1)
     g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.VERTICAL, 0.5)
+    g_second_modelMatrix.rotate(90, 0, 0,1 )
 
     g_third_modelMatrix = new Matrix4()
-    g_third_modelMatrix = g_third_modelMatrix.setScale(0.25, 0.25, 0.25)
+    g_third_modelMatrix = g_third_modelMatrix.setScale(other_box_scale, other_box_scale, other_box_scale)
     g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, 1)
     g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.VERTICAL, -0.5)
+    g_third_modelMatrix.rotate(90, 0, 0,1 )
 }

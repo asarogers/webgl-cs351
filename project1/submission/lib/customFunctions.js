@@ -104,6 +104,80 @@ function generateSquareFromVertex(point){
 }
 
 
+
+function generateSpaceship(point){
+    return [
+        ...generateShipFront(point),
+        ...generateShipBottom(point),
+        ...generateShipRight(point),
+        ...generateShipLeft(point),
+        ...generateShipBottomFace(point),
+    ]
+}
+
+function generateShipFront(point){
+    const top = [
+     point, -point, point,
+    0, point, 0,
+    -point, -point, point,
+    ]
+    return top
+}
+
+function generateShipBottom(point){
+    const top = [
+        0, point, -0,
+    point, -point, -point,
+    -point, -point, -point,
+       ]
+       return top
+}
+
+function generateShipRight(point){
+    const top = [
+        0, point, 0,
+       point, -point, point,
+       point, -point, -point,
+       ]
+      
+       return top
+}
+function generateShipLeft(point){
+    const top = [
+        -point, -point, point,
+        -0, point, -0,
+        -point, -point, -point,
+       ]
+       return top
+}
+function generateShipTop(point){
+    const top = [
+        point, point, point,
+        point, point, -point,
+        -point, point, -point,
+       ]
+
+       return top
+}
+function generateShipBottomFace(point){
+    const top = [
+        point, -point, point,
+        -point, -point, -point,
+        point, -point, -point,
+       ]
+
+       const bottom = [
+        point, -point, point,
+        -point, -point, point,
+        -point, -point, -point,
+       ]
+       face = [...top, ...bottom]
+       return face
+}
+
+
+
+
 function move3DShape(model, move, distance){
     // move the 3D shape one directional or another
     switch (move) {
