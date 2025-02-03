@@ -375,7 +375,7 @@ function setupCamera(){
 
     slider_input = document.getElementById('sliderFOVY')
     slider_input.addEventListener('input', (event) => {
-        updateFOVY_orth(event.target.value)
+        updateFOVY(event.target.value)
     })
 
     slider_input = document.getElementById('sliderAspect')

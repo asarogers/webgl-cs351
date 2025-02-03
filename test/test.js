@@ -5,10 +5,11 @@ const VSHADER_SOURCE = `
     uniform mat4 u_Model;
     uniform mat4 u_World;
     uniform mat4 u_Camera;
+    uniform mat4 u_Perspective;
     attribute vec3 a_Color;
     varying vec3 v_Color;
     void main() {
-        gl_Position = u_Camera * u_World * u_Model * vec4(a_Position, 1.0);
+        gl_Position = u_Perspective * u_Camera * u_World * u_Model * vec4(a_Position, 1.0);
         v_Color = a_Color;
     }
 `
@@ -29,11 +30,13 @@ var g_lastFrameMS
 var g_u_model_ref
 var g_u_world_ref
 var g_u_camera_ref
+var g_u_perspective_ref
 
 // usual model/world matrices
 var g_modelMatrix
 var g_worldMatrix
 var g_worldMatrix2
+var g_perspectiveMatrix
 
 // camera projection values
 var g_camera_x
@@ -72,6 +75,16 @@ function main() {
         console.log('Failed to get the rendering context for WebGL')
         return
     }
+        // Enable culling and depth
+        gl.enable(gl.CULL_FACE)
+        gl.enable(gl.DEPTH_TEST)
+        // gl.cullFace(gl.FRONT);
+        // gl.enable(gl.BACK)
+        // gl.enable(gl.DEPTH_TEST)
+        // gl.cullFace(gl.FRONT);
+        // gl.frontFace(gl.CW);  // Switch to clockwise (CW)
+        // gl.frontFace(gl.CCW);  // Default: Counterclockwise
+
 
     // We will call this at the end of most main functions from now on
     loadOBJFiles()
@@ -84,7 +97,7 @@ function main() {
  */
 async function loadOBJFiles() {
     // open our OBJ file(s)
-    data = await fetch('./resources/ship.obj').then(response => response.text()).then((x) => x)
+    data = await fetch('/resources/ship.obj').then(response => response.text()).then((x) => x)
     g_teapotMesh = []
     readObjFile(data, g_teapotMesh)
 
@@ -118,6 +131,7 @@ function startRendering() {
     g_u_model_ref = gl.getUniformLocation(gl.program, 'u_Model')
     g_u_world_ref = gl.getUniformLocation(gl.program, 'u_World')
     g_u_camera_ref = gl.getUniformLocation(gl.program, 'u_Camera')
+    g_u_perspective_ref = gl.getUniformLocation(gl.program, 'u_Perspective')
 
     // Setup our model by scaling
     g_modelMatrix = new Matrix4()
@@ -127,17 +141,20 @@ function startRendering() {
     g_worldMatrix = new Matrix4().translate(-.7, 0, 0)
     g_worldMatrix2 = new Matrix4().translate(.7, 0, 0)
 
-    // Enable culling and depth
-    gl.enable(gl.CULL_FACE)
-    gl.enable(gl.DEPTH_TEST)
+    // Use a reasonable "default" perspective matrix
+    g_perspectiveMatrix = new Matrix4().setPerspective(90, 1, .1, 100)
+
+
+
+    
 
     // Setup for ticks
     g_lastFrameMS = Date.now()
 
     // Initially set our camera to be at the origin
     updateCameraX(0)
-    updateCameraY(0)
-    updateCameraZ(0)
+    updateCameraY(1.4)
+    updateCameraZ(1)
 
     tick()
 }
@@ -166,9 +183,13 @@ function tick() {
 
 // draw to the screen on the next frame
 function draw() {
-    // for this demo, update the camera _each frame_
-    // this makes the slider logic a bit easier to keep track of
-    var cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z)
+    // we can just use our x, y, and z!
+    // for this demo, we'll stay in the "default" CVV
+    var cameraMatrix = new Matrix4().setLookAt(
+        g_camera_x, g_camera_y, g_camera_z,
+        0, 0, 0,
+        0, 1, 0
+    )
 
     // Clear the canvas with a black background
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
@@ -178,6 +199,7 @@ function draw() {
     gl.uniformMatrix4fv(g_u_model_ref, false, g_modelMatrix.elements)
     gl.uniformMatrix4fv(g_u_world_ref, false, g_worldMatrix.elements)
     gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements)
+    gl.uniformMatrix4fv(g_u_perspective_ref, false, g_perspectiveMatrix.elements)
 
     // Draw our first teapot
     gl.drawArrays(gl.TRIANGLES, 0, g_teapotMesh.length / 3)

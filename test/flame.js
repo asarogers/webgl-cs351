@@ -1,5 +1,4 @@
-// Last edited by Dietrich Geisler 2025
-
+// Flame Vertex Shader
 const VSHADER_SOURCE = `
     attribute vec3 a_Position;
     uniform mat4 u_Model;
@@ -11,14 +10,15 @@ const VSHADER_SOURCE = `
         gl_Position = u_Camera * u_World * u_Model * vec4(a_Position, 1.0);
         v_Color = a_Color;
     }
-`
+`;
 
+// Flame Fragment Shader
 const FSHADER_SOURCE = `
     varying mediump vec3 v_Color;
     void main() {
         gl_FragColor = vec4(v_Color, 1.0);
     }
-`
+`;
 
 // references to general information
 var g_canvas
@@ -124,8 +124,7 @@ function startRendering() {
     g_modelMatrix = g_modelMatrix.setScale(.05, .05, .05)
 
     // Reposition our mesh (in this case as an identity operation)
-    g_worldMatrix = new Matrix4().translate(-.7, 0, 0)
-    g_worldMatrix2 = new Matrix4().translate(.7, 0, 0)
+    g_worldMatrix = new Matrix4()
 
     // Enable culling and depth
     gl.enable(gl.CULL_FACE)
@@ -180,12 +179,6 @@ function draw() {
     gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements)
 
     // Draw our first teapot
-    gl.drawArrays(gl.TRIANGLES, 0, g_teapotMesh.length / 3)
-
-    // Update with our second world matrix
-    gl.uniformMatrix4fv(g_u_world_ref, false, g_worldMatrix2.elements)
-
-    // Draw our second teapot
     gl.drawArrays(gl.TRIANGLES, 0, g_teapotMesh.length / 3)
 }
 
