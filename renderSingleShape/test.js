@@ -44,13 +44,212 @@ var g_camera_y
 var g_camera_z
 
 // Mesh definitions
-var g_teapotMesh
+var g_shipMesh
 
 // We're using triangles, so our vertices each have 3 elements
 const TRIANGLE_SIZE = 3
 
 // The size in bytes of a floating point
 const FLOAT_SIZE = 4
+
+class FlameSystem {
+    constructor(flamePositions) {
+        // flamePositions should be an array of objects like [{x: 0.25, y: 0}, {x: -0.25, y: 2}]
+        this.flames = [];
+        
+        // Create a flame at each specified position
+        flamePositions.forEach(pos => {
+            this.flames.push(new Flame(pos.x, pos.y));
+        });
+    }
+    addFlame(x, y) {
+        this.flames.push(new Flame(x, y));
+    }
+
+    update(deltaTime) {
+        this.flames.forEach(flame => {
+            flame.pulseAndFlicker(deltaTime, 5.0, 0.1);
+            flame.moveFlameTip(deltaTime, 6.0, 0.2);
+            flame.dissolveFlame(deltaTime);
+        });
+    }
+
+    draw() {
+        this.flames.forEach(flame => {
+            let modelMatrix = flame.applyTransformations();
+            gl.uniformMatrix4fv(g_u_model_ref, false, modelMatrix.elements);
+            gl.drawArrays(gl.TRIANGLES, 0, flame.VERTICES.length / 3);
+        });
+    }
+}
+
+
+
+class Flame {
+    constructor(xOffset = 0, yOffset = 0) {
+        this.VERTICES = [];
+        this.baseVertices = []; // Store the original vertices
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
+        this.time = 0;
+        this.flickerIntensity = 0.02;
+        this.dissolveMap = new Map();
+        this.dissolveRate = 0.01;
+        this.regenerateRate = 0.005;
+    }
+
+    initializeVertices(objData) {
+        // Make a deep copy of the vertices
+        //shrink the shape
+        this.baseVertices = [...objData];
+        this.VERTICES = this.baseVertices.map((value, index) => {
+            if (index % 3 === 0) { // X coordinate
+                return value + this.xOffset;
+            } else if (index % 3 === 1) { // Y coordinate
+                return value + this.yOffset;
+            }
+            return value;
+        });
+        this.setLength();
+    }
+
+    setLength() {
+        this.flameSize = this.VERTICES.length;
+        for (let i = 0; i < this.flameSize; i += 3) {
+            this.dissolveMap.set(i, 1.0);
+        }
+    }
+
+    updateColors() {
+        this.COLORS = [];
+        const triangleCount = this.VERTICES.length / 9; 
+
+        for (let i = 0; i < triangleCount; i++) {
+            const vertexIndex = i * 9;
+            const y = this.VERTICES[vertexIndex + 1]; 
+            const maxY = Math.max(...this.VERTICES.filter((_, idx) => idx % 3 === 1));
+            const heightFactor = y / maxY;
+            
+
+            const dissolveFactor = this.dissolveMap.get(vertexIndex) || 1.0;
+
+            // Base flame colors
+            const red = 1.0;
+            const green = Math.max(0, 0.4 * (1 - heightFactor));
+            const blue = Math.max(0, 0.1 * (1 - heightFactor * 2));
+            
+            // Add flicker
+            const flickerAmount = (Math.random() - 0.5) * 0.1;
+            
+            // Blend with black based on dissolution
+            const finalRed = red * dissolveFactor;
+            const finalGreen = (green + flickerAmount) * dissolveFactor;
+            const finalBlue = blue * dissolveFactor;
+
+            // Apply to all three vertices of the triangle
+            for (let vert = 0; vert < 3; vert++) {
+                this.COLORS.push(finalRed, finalGreen, finalBlue);
+            }
+        }
+
+        return this.COLORS;
+    }
+
+    dissolveFlame(deltaTime) {
+        this.time += deltaTime * 0.001;
+        const maxY = Math.max(...this.VERTICES.filter((_, i) => i % 3 === 1));
+
+        // Update dissolution state for each vertex group
+        for (let [index, value] of this.dissolveMap) {
+            const y = this.VERTICES[index + 1];
+            const heightFactor = y / maxY;
+
+            if (heightFactor > 0.6) {
+                // Higher parts are more likely to dissolve
+                if (Math.random() < this.dissolveRate) {
+                    this.dissolveMap.set(index, Math.max(0, value - 0.1));
+                }
+            } else {
+                // Lower parts more likely to regenerate
+                if (Math.random() < this.regenerateRate) {
+                    this.dissolveMap.set(index, Math.min(1.0, value + 0.1));
+                }
+            }
+        }
+
+
+        return this.updateColors();
+    }
+
+
+    pulseAndFlicker(deltaTime, frequency = 3.0, amplitude = 0.15) {
+        this.time += deltaTime * 0.001; // Convert to seconds
+
+
+        this.scaleFactor = 1.0 + Math.sin(this.time * frequency) * amplitude;
+
+
+        this.scaleFactor += (Math.random() - 0.5) * this.flickerIntensity;
+
+        this.xFlicker = (Math.random() - 0.5) * this.flickerIntensity * 2;
+        this.yFlicker = (Math.random() - 0.5) * this.flickerIntensity * 2;
+    }
+
+
+    applyTransformations() {
+        return new Matrix4()
+            .translate(this.xOffset + this.xFlicker, this.yOffset + this.yFlicker, 0)
+            .scale(this.scaleFactor, this.scaleFactor, this.scaleFactor);
+    }
+
+    moveFlameTip(deltaTime, frequency = 6, amplitude = 0.2) {
+        this.time += deltaTime * 0.001; // Convert time to seconds
+
+        let maxY = Math.max(...this.VERTICES.filter((_, i) => i % 3 === 1)); // Find max Y
+
+        this.VERTICES = this.VERTICES.map((value, index) => {
+            let coordType = index % 3; // 0 = X, 1 = Y, 2 = Z
+            let y = this.VERTICES[index + (coordType === 2 ? -1 : 0)]; // Get Y value
+
+            // 🔹 Only move the tip (upper part of the flame)
+            let heightFactor = y / maxY; // Normalize 0 at base, 1 at tip
+            if (heightFactor < 0.6) return value; // Don't move lower vertices
+
+            if (coordType === 0) { // X movement (left/right)
+                return value + Math.sin(this.time * frequency) * amplitude * heightFactor;
+            }
+            if (coordType === 2) { // Z movement (forward/backward)
+                return value + Math.cos(this.time * frequency) * amplitude * heightFactor;
+            }
+            return value;
+        });
+    }
+    warpFlameTaper(factor = 0.5) {
+        let maxY = Math.max(...this.VERTICES.filter((_, i) => i % 3 === 1)); // Find max Y
+        this.VERTICES = this.VERTICES.map((value, index) => {
+            if (index % 3 === 0 || index % 3 === 2) { // X or Z coordinates
+                let y = this.VERTICES[index + 1]; // Get Y-coordinate
+                let scale = 1 - (y / maxY) * factor; // Scale down higher up
+                return value * scale;
+            }
+            return value;
+        });
+    }
+    warpFlameNoise(intensity = 0.1) {
+        this.VERTICES = this.VERTICES.map((value, index) => {
+            if (index % 3 === 0 || index % 3 === 2) { // X or Z coordinates
+                return value + (Math.random() * 2 - 1) * intensity; // Random shift
+            }
+            return value;
+        });
+    }
+}
+
+
+let flameSystem = new FlameSystem([]);  // Start with no flames
+flameSystem.addFlame(0.25, 0);
+flameSystem.addFlame(-0.25, 0);
+
 
 function main() {
     // Setup our camera movement sliders
@@ -97,9 +296,17 @@ function main() {
  */
 async function loadOBJFiles() {
     // open our OBJ file(s)
-    data = await fetch('/resources/ship.obj').then(response => response.text()).then((x) => x)
-    g_teapotMesh = []
-    readObjFile(data, g_teapotMesh)
+    const ship = await fetch('./resources/ship.obj').then(response => response.text()).then((x) => x)
+    const flameShape = await fetch('./resources/cone.obj').then(response => response.text());
+    flameSystem.flames.forEach(flame => {
+        readObjFile(flameShape, flame.VERTICES);
+        flame.setLength();
+        flame.warpFlameTaper(0.7);
+    });
+
+
+    g_shipMesh = []
+    readObjFile(ship, g_shipMesh)
 
     // Wait to load our models before starting to render
     startRendering()
@@ -113,8 +320,24 @@ function startRendering() {
     }
 
     // initialize the VBO
-    var colors = buildColorAttributes(g_teapotMesh.length / 3)
-    var data = g_teapotMesh.concat(colors)
+    var shipColor = buildColorAttributes(g_shipMesh.length / 3)
+    // console.log(`ship mesh size = ${g_shipMesh.length}`)
+    // console.log(`color starts at = ${g_shipMesh.length * FLOAT_SIZE}`)
+
+    // get the flame vertex and colors
+    var flameVertices = []
+    var flameColors = []
+
+    flameSystem.flames.forEach(flame => {
+        const colors = flame.updateColors();
+        flameVertices = flameVertices.concat(flame.VERTICES);
+        flameColors = flameColors.concat(colors);
+    });
+
+    var shapeVertices = g_shipMesh.concat(flameVertices)
+
+    // var data = g_shipMesh.concat(shipColor)
+    var data = shapeVertices.concat(shipColor).concat(flameColors)
     if (!initVBO(new Float32Array(data))) {
         return
     }
@@ -123,7 +346,7 @@ function startRendering() {
     if (!setupVec3('a_Position', 0, 0)) {
         return
     }
-    if (!setupVec3('a_Color', 0, g_teapotMesh.length * FLOAT_SIZE)) {
+    if (!setupVec3('a_Color', 0, shapeVertices.length * FLOAT_SIZE)) {
         return
     }
 
@@ -138,8 +361,7 @@ function startRendering() {
     g_modelMatrix = g_modelMatrix.setScale(.05, .05, .05)
 
     // Reposition our mesh (in this case as an identity operation)
-    g_worldMatrix = new Matrix4().translate(-.7, 0, 0)
-    g_worldMatrix2 = new Matrix4().translate(.7, 0, 0)
+    g_worldMatrix = new Matrix4()
 
     // Use a reasonable "default" perspective matrix
     g_perspectiveMatrix = new Matrix4().setPerspective(90, 1, .1, 100)
@@ -153,8 +375,8 @@ function startRendering() {
 
     // Initially set our camera to be at the origin
     updateCameraX(0)
-    updateCameraY(1.4)
-    updateCameraZ(1)
+    updateCameraY(0)
+    updateCameraZ(-1)
 
     tick()
 }
@@ -172,9 +394,11 @@ function tick() {
     deltaTime = current_time - g_lastFrameMS
     g_lastFrameMS = current_time
 
+    flameSystem.update(deltaTime);
+
     // rotate the teapot constantly around the Y axis of the model
     angle = ROTATION_SPEED * deltaTime
-    g_modelMatrix.concat(new Matrix4().setRotate(angle, 0, 1, 0))
+    // g_modelMatrix.concat(new Matrix4().setRotate(angle, 0, 1, 0))
 
     draw()
 
@@ -202,13 +426,8 @@ function draw() {
     gl.uniformMatrix4fv(g_u_perspective_ref, false, g_perspectiveMatrix.elements)
 
     // Draw our first teapot
-    gl.drawArrays(gl.TRIANGLES, 0, g_teapotMesh.length / 3)
-
-    // Update with our second world matrix
-    gl.uniformMatrix4fv(g_u_world_ref, false, g_worldMatrix2.elements)
-
-    // Draw our second teapot
-    gl.drawArrays(gl.TRIANGLES, 0, g_teapotMesh.length / 3)
+    gl.drawArrays(gl.TRIANGLES, 0, g_shipMesh.length / 3)
+    flameSystem.draw();
 }
 
 // Helper to construct colors
@@ -224,6 +443,29 @@ function buildColorAttributes(vertex_count) {
     }
 
     return colors
+}
+
+function buildFlameColor(vertex_count, time) {
+    var colors = [];
+    var triangle_count = vertex_count / 3;
+    let flickerFactor = Math.sin(time * 2) * 0.1; // Create slight variation
+
+    for (var i = 0; i < triangle_count; i++) {
+        var shade = i / triangle_count; // Normalized gradient (0 to 1)
+        
+        // 🔥 Introduce "dissolve" probability
+        let fadeFactor = Math.random() < (shade * 0.7 + 0.2) ? 0 : 1; // Higher = more likely to fade
+
+        // More dynamic flame color transition
+        var red = 1.0 * fadeFactor;
+        var green = Math.max(0, 0.4 * (1 - shade) + flickerFactor) * fadeFactor;
+        var blue = Math.max(0, 0.1 * (1 - shade * 2)) * fadeFactor;
+        
+        for (var vert = 0; vert < 3; vert++) {
+            colors.push(red, green, blue);
+        }
+    }
+    return colors;
 }
 
 function updateCameraX(amount) {

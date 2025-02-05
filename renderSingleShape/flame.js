@@ -115,15 +115,15 @@ class Flame {
 
     updateColors() {
         this.COLORS = [];
-        const triangleCount = this.VERTICES.length / 9; // 3 vertices per triangle, 3 coordinates per vertex
+        const triangleCount = this.VERTICES.length / 9; 
 
         for (let i = 0; i < triangleCount; i++) {
             const vertexIndex = i * 9;
-            const y = this.VERTICES[vertexIndex + 1]; // Y coordinate of first vertex in triangle
+            const y = this.VERTICES[vertexIndex + 1]; 
             const maxY = Math.max(...this.VERTICES.filter((_, idx) => idx % 3 === 1));
             const heightFactor = y / maxY;
             
-            // Get dissolution factor for this triangle
+
             const dissolveFactor = this.dissolveMap.get(vertexIndex) || 1.0;
 
             // Base flame colors
@@ -170,33 +170,31 @@ class Flame {
             }
         }
 
-        // Update colors based on new dissolution state
+
         return this.updateColors();
     }
 
-    // 🔥 **Keep flickering & pulsation**
+
     pulseAndFlicker(deltaTime, frequency = 3.0, amplitude = 0.15) {
         this.time += deltaTime * 0.001; // Convert to seconds
 
-        // 🔹 Smooth pulsing effect (scaling up and down)
+
         this.scaleFactor = 1.0 + Math.sin(this.time * frequency) * amplitude;
 
-        // 🔹 Flickering effect (small random noise added to scaling)
+
         this.scaleFactor += (Math.random() - 0.5) * this.flickerIntensity;
 
-        // 🔹 Random slight X/Y movement
         this.xFlicker = (Math.random() - 0.5) * this.flickerIntensity * 2;
         this.yFlicker = (Math.random() - 0.5) * this.flickerIntensity * 2;
     }
 
-    // 🔥 **Apply all transformations**
+
     applyTransformations() {
         return new Matrix4()
             .translate(this.xOffset + this.xFlicker, this.yOffset + this.yFlicker, 0)
             .scale(this.scaleFactor, this.scaleFactor, this.scaleFactor);
     }
 
-    // 🔥 Move the tip slightly like a real flame
     moveFlameTip(deltaTime, frequency = 6, amplitude = 0.2) {
         this.time += deltaTime * 0.001; // Convert time to seconds
 
@@ -244,8 +242,8 @@ class Flame {
 let flameSystem = new FlameSystem([]);  // Start with no flames
 flameSystem.addFlame(0.25, 0);
 flameSystem.addFlame(-0.25, 0);
-flameSystem.addFlame(-0.25, 2);
-flameSystem.addFlame(0.25, 2);
+
+
 
 function main() {
     // Setup our camera movement sliders
@@ -281,15 +279,29 @@ function main() {
  * I made everything sequential for this class to make the logic easier to follow
  */
 async function loadOBJFiles() {
-    data = await fetch('./resources/cone.obj').then(response => response.text());
+    // Fetch the ship mesh
+    const shipData = await fetch('./resources/ship.obj').then(response => response.text());
+
+    // Fetch the flame mesh (cone.obj)
+    const flameData = await fetch('./resources/cone.obj').then(response => response.text());
+
+    // Parse the ship mesh
+    g_shipMesh = [];
+    readObjFile(shipData, g_shipMesh);
+
+    // Parse the flame mesh
+    g_flameMesh = [];
+    readObjFile(flameData, g_flameMesh);
+
+    // Assign flame data to all flames in the system
     flameSystem.flames.forEach(flame => {
-        readObjFile(data, flame.VERTICES);
-        flame.setLength();
-        flame.warpFlameTaper(0.7);
+        flame.initializeVertices(g_flameMesh);
     });
 
+    // Start rendering after all files are loaded
     startRendering();
 }
+
 
 
 function startRendering() {
