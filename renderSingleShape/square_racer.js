@@ -38,10 +38,10 @@ var g_modelMatrix
 var g_second_modelMatrix
 var g_third_modelMatrix
 var g_ship_modelMatrix
-var g_flame_modelMatrix
+var g_flame_modelMatrix1, g_flame_modelMatrix2
 var g_worldMatrix
 var g_shipMesh
-var g_flameMesh
+var g_flameMesh1, g_flameMesh2
 
 // camera projection values
 var g_camera_x
@@ -61,36 +61,6 @@ var first_square_scale = 0.15
 var other_box_scale = 0.25
 var isOrth = true
 
-class FlameSystem {
-    constructor(flamePositions) {
-        // flamePositions should be an array of objects like [{x: 0.25, y: 0}, {x: -0.25, y: 2}]
-        this.flames = [];
-        
-        // Create a flame at each specified position
-        flamePositions.forEach(pos => {
-            this.flames.push(new Flame(pos.x, pos.y));
-        });
-    }
-    addFlame(x, y) {
-        this.flames.push(new Flame(x, y));
-    }
-
-    update(deltaTime) {
-        this.flames.forEach(flame => {
-            flame.pulseAndFlicker(deltaTime, 5.0, 0.1);
-            flame.moveFlameTip(deltaTime, 6.0, 0.2);
-            flame.dissolveFlame(deltaTime);
-        });
-    }
-
-    draw() {
-        this.flames.forEach(flame => {
-            let modelMatrix = flame.applyTransformations();
-            gl.uniformMatrix4fv(g_u_model_ref, false, modelMatrix.elements);
-            gl.drawArrays(gl.TRIANGLES, 0, flame.VERTICES.length / 3);
-        });
-    }
-}
 
 
 
@@ -103,8 +73,8 @@ class Flame {
         this.time = 0;
         this.flickerIntensity = 0.02;
         this.dissolveMap = new Map();
-        this.dissolveRate = 0.01;
-        this.regenerateRate = 0.005;
+        this.dissolveRate = 0.05;
+        this.regenerateRate = 0.025;
     }
 
     initializeVertices(objData) {
@@ -140,7 +110,10 @@ class Flame {
             const heightFactor = y / maxY;
             
 
-            const dissolveFactor = this.dissolveMap.get(vertexIndex) || 1.0;
+            const dissolveFactor = this.dissolveMap.get(vertexIndex) || 
+                       this.dissolveMap.get(vertexIndex + 3) || 
+                       this.dissolveMap.get(vertexIndex + 6) || 1.0;
+
 
             // Base flame colors
             const red = 1.0;
@@ -151,9 +124,10 @@ class Flame {
             const flickerAmount = (Math.random() - 0.5) * 0.1;
             
             // Blend with black based on dissolution
-            const finalRed = red * dissolveFactor;
-            const finalGreen = (green + flickerAmount) * dissolveFactor;
-            const finalBlue = blue * dissolveFactor;
+            const finalRed = red * dissolveFactor + (1 - dissolveFactor) * 0;
+            const finalGreen = (green + flickerAmount) * dissolveFactor + (1 - dissolveFactor) * 0;
+            const finalBlue = blue * dissolveFactor + (1 - dissolveFactor) * 0;
+            
 
             // Apply to all three vertices of the triangle
             for (let vert = 0; vert < 3; vert++) {
@@ -165,7 +139,7 @@ class Flame {
     }
 
     dissolveFlame(deltaTime) {
-        this.time += deltaTime * 0.001;
+        this.time += deltaTime * 0.01;
         const maxY = Math.max(...this.VERTICES.filter((_, i) => i % 3 === 1));
 
         // Update dissolution state for each vertex group
@@ -192,14 +166,9 @@ class Flame {
 
 
     pulseAndFlicker(deltaTime, frequency = 3.0, amplitude = 0.15) {
-        this.time += deltaTime * 0.001; // Convert to seconds
-
-
+        this.time += deltaTime * 0.001;
         this.scaleFactor = 1.0 + Math.sin(this.time * frequency) * amplitude;
-
-
         this.scaleFactor += (Math.random() - 0.5) * this.flickerIntensity;
-
         this.xFlicker = (Math.random() - 0.5) * this.flickerIntensity * 2;
         this.yFlicker = (Math.random() - 0.5) * this.flickerIntensity * 2;
     }
@@ -252,13 +221,18 @@ class Flame {
             return value;
         });
     }
+    scaleFlame(deltaTime, minScale = 0.8, maxScale = 1.2, speed = 2.0) {
+        this.time += deltaTime * 0.001;
+        let scale = minScale + (Math.sin(this.time * speed) * 0.5 + 0.5) * (maxScale - minScale);
+        
+        this.scaleFactor = scale;
+    }
+    
 }
 
 
-let flameSystem = new FlameSystem([]);  // Start with no flames
-flameSystem.addFlame(0.25, 0);
-flameSystem.addFlame(-0.25, 0);
 
+let flame1, flame2
 
 // Grid constants
 const GRID_X_RANGE = 10  // Reduced from 1000 for better performance
@@ -275,6 +249,15 @@ class Square {
     }
 }
 
+class Mesh{
+    constructor(VERTICES) {
+        this.VERTICES = VERTICES;
+        this.VERTEX_COUNT = VERTICES.length / 3;
+        this.TRIANGLE_SIZE = 3;
+        this.SPEED = 0;
+        this.COLORS = null;
+    }
+}
 const TRIANGLE_SIZE = 3;
 const FLOAT_SIZE = 4;
 
@@ -286,9 +269,10 @@ const movement = Object.freeze({
     RESET: "reset"
 });
 
-let firstSquare = new Square(generateSpaceship(0.5));
+let firstSquare = new Square(generateSquareFromVertex(0.5));
 let secondSquare = new Square(generateSpaceship(0.5));
 let thirdSquare = new Square(generateSpaceship(0.5));
+var shipMesh
 
 var translate_time;
 
@@ -299,19 +283,26 @@ var g_rotationAxis;
 async function loadOBJFiles() {
     // Fetch the ship mesh
     const shipData = await fetch('./resources/ship.obj').then(response => response.text());
-
-    // Fetch the flame mesh (cone.obj)
     const flameData = await fetch('./resources/cone.obj').then(response => response.text());
 
     // Parse the ship mesh
     g_shipMesh = [];
     readObjFile(shipData, g_shipMesh);
+    shipMesh = new Mesh(g_shipMesh)
 
 
     // Parse the flame mesh
-    g_flameMesh = [];
-    readObjFile(flameData, g_flameMesh);
+    g_flameMesh1 = [];
+    g_flameMesh2 = [];
+    readObjFile(flameData, g_flameMesh1);
+    readObjFile(flameData, g_flameMesh2);
 
+
+    flame1 = new Flame(0.25, 0)
+    flame1.initializeVertices(g_flameMesh1);
+
+    flame2 = new Flame(0.25, 0)
+    flame2.initializeVertices(g_flameMesh2);
 
 
     // Start rendering after all files are loaded
@@ -330,6 +321,8 @@ function main() {
         return;
     }
 
+
+
     loadOBJFiles()
 }
 
@@ -340,6 +333,7 @@ function startRendering(){
         console.log('Failed to initialize shaders.');
         return;
     }
+
 
     g_u_model_ref = gl.getUniformLocation(gl.program, 'u_Model');
     g_u_world_ref = gl.getUniformLocation(gl.program, 'u_World');
@@ -357,6 +351,7 @@ function startRendering(){
 
     reset();
     gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
     
     g_lastFrameMS = Date.now();
     g_rotationAxis = [0, 0, 0];
@@ -374,23 +369,35 @@ function initBuffers() {
         ...secondSquare.VERTICES,
         ...thirdSquare.VERTICES,
         ...g_shipMesh,
-        ...g_flameMesh,
-        
+        ...flame1.VERTICES,
+        ...flame2.VERTICES
     ];
-    
-    let gridInfo = buildGridAttributes(1, 1, [1.0, 1.0, 1.0]);
-    g_gridMesh = gridInfo[0];
-    vertices = [...vertices, ...g_gridMesh];
+
+    firstSquare.COLORS = buildColorAttributes(firstSquare.VERTEX_COUNT)
+    secondSquare.COLORS = buildColorAttributes(secondSquare.VERTEX_COUNT)
+    thirdSquare.COLORS = buildColorAttributes(thirdSquare.VERTEX_COUNT)
+    shipMesh.COLORS = buildOriginalColorAttributes(g_shipMesh.length / 3)
+    flame1.COLORS = flame1.updateColors()
+    flame2.COLORS = flame2.updateColors()
 
     // Create colors for all shapes
     let colors = [
-        ...buildColorAttributes(firstSquare.VERTEX_COUNT),
-        ...buildColorAttributes(secondSquare.VERTEX_COUNT),
-        ...buildColorAttributes(thirdSquare.VERTEX_COUNT),
-        ...buildOriginalColorAttributes(g_shipMesh.length / 3),
-        ...buildFlameColor(g_flameMesh.length/3),
-        ...gridInfo[1]
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS
     ];
+
+
+
+    let gridInfo = buildGridAttributes(1, 1, [1.0, 1.0, 1.0]);
+    g_gridMesh = gridInfo[0];
+
+    //add the grid last
+    vertices = [...vertices, ...g_gridMesh];
+    colors = [...colors, ...gridInfo[1]]
 
     // Create and bind single VBO
     let VBO = gl.createBuffer();
@@ -414,7 +421,9 @@ function initBuffers() {
         thirdSquareCount: thirdSquare.VERTEX_COUNT,
         shipMeshCount: g_shipMesh.length /3,
         gridCount: g_gridMesh.length / 3,
-        flameMeshCount: g_flameMesh.length / 3,
+        //get the length of the flame
+        flameMesh1Count: g_flameMesh1.length / 3, 
+        flameMesh2Count: g_flameMesh2.length / 3,  
     };
 }
 
@@ -423,153 +432,6 @@ function initBuffers() {
 
 // extra constants for cleanliness
 var ROTATION_SPEED = .05
-
-
-
-function tick() {
-    var deltaTime = Date.now() - g_lastFrameMS;
-    g_lastFrameMS = Date.now();
-
-    let angle = ROTATION_SPEED * deltaTime;
-    // g_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis));
-    // g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...g_rotationAxis));
-    // g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...g_rotationAxis));
-
-    // translate_time += deltaTime;
-    // if (translate_time >= 3000) {
-    //     translate_time = 0;
-    //     reset_moving_shapes();
-    //     setSpeed();
-    //     updateColors();
-    // }
-
-    // g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, -secondSquare.SPEED);
-    // g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, -thirdSquare.SPEED);
-
-    draw();
-    requestAnimationFrame(tick);
-}
-
-
-
-function buildGridAttributes(grid_row_spacing, grid_column_spacing, grid_color) {
-    var mesh = []
-    var colors = []
-
-    // Construct the rows
-    for (var x = -GRID_X_RANGE; x < GRID_X_RANGE; x += grid_row_spacing) {
-        // two vertices for each line
-        // one at -Z and one at +Z
-        mesh.push(x, 0, -GRID_Z_RANGE)
-        mesh.push(x, 0, GRID_Z_RANGE)
-    }
-
-    // Construct the columns extending "outward" from the camera
-    for (var z = -GRID_Z_RANGE; z < GRID_Z_RANGE; z += grid_column_spacing) {
-        // two vertices for each line
-        // one at -Z and one at +Z
-        mesh.push(-GRID_X_RANGE, 0, z)
-        mesh.push(GRID_X_RANGE, 0, z)
-    }
-
-    // We need one color per vertex
-    // since we have 3 components for each vertex, this is length/3
-    for (var i = 0; i < mesh.length / 3; i++) {
-        colors.push(grid_color[0], grid_color[1], grid_color[2])
-    }
-
-    return [mesh, colors]
-}
-
-
-function setSpeed(){
-    let lower = 0.005
-    let upper = 0.01
-    speed1 = lower + Math.random() * (upper - lower)
-    speed2 = lower + Math.random() * (upper - lower)
-
-    
-    secondSquare.SPEED = speed2
-    thirdSquare.SPEED = speed1
-}
-
-// draw to the screen on the next frame
-function draw() {
-    const cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z);
-    var projection_matrix
-    if (isOrth){
-        projection_matrix = new Matrix4().setOrtho(g_left, g_right, g_bottom, g_top, g_near_orth, g_far_orth)
-    }else{
-        projection_matrix = new Matrix4().setPerspective(g_fovy, g_aspect, g_near, g_far)
-    }
-
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
-
-    // Set up position attribute
-    setupVec3('a_Position', 0, bf_info.vertexOffset);
-    
-    // Set up color attribute
-    setupVec3('a_Color', 0, bf_info.colorOffset);
-
-    // Draw first square
-    gl.uniformMatrix4fv(g_u_model_ref, false, g_modelMatrix.elements);
-    gl.uniformMatrix4fv(g_u_world_ref, false, g_worldMatrix.elements);
-    gl.drawArrays(gl.TRIANGLES, 0, bf_info.firstSquareCount);
-
-    // Draw second square
-    gl.uniformMatrix4fv(g_u_model_ref, false, g_second_modelMatrix.elements);
-    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount, 
-                 bf_info.secondSquareCount);
-
-    // Draw third square
-    gl.uniformMatrix4fv(g_u_model_ref, false, g_third_modelMatrix.elements);
-    gl.drawArrays(gl.TRIANGLES, 
-                 bf_info.firstSquareCount + bf_info.secondSquareCount,
-                 bf_info.thirdSquareCount);
-
-    // Draw ship mesh
-    gl.uniformMatrix4fv(g_u_model_ref, false, g_ship_modelMatrix.elements);
-    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount + bf_info.secondSquareCount + bf_info.thirdSquareCount, g_shipMesh.length / 3);
-    
-    // Draw flame mesh
-    gl.uniformMatrix4fv(g_u_model_ref, false, g_flame_modelMatrix.elements);
-    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount + bf_info.secondSquareCount + bf_info.thirdSquareCount + bf_info.shipMeshCount, g_flameMesh.length / 3);
-
-    // Draw grid
-    gl.uniformMatrix4fv(g_u_model_ref, false, new Matrix4().elements);
-    gl.uniformMatrix4fv(g_u_world_ref, false, new Matrix4().translate(0, GRID_Y_OFFSET, 0).elements);
-    gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements);
-    gl.uniformMatrix4fv(g_u_projection_ref, false, projection_matrix.elements);
-
-
-
-    gl.drawArrays(gl.LINES, 
-                 bf_info.firstSquareCount + bf_info.secondSquareCount + 
-                 bf_info.thirdSquareCount + bf_info.shipMeshCount + bf_info.flameMeshCount,
-                 bf_info.gridCount);
-}
-
-function updateColors() {
-    const vertices = [
-        ...firstSquare.VERTICES,
-        ...secondSquare.VERTICES,
-        ...thirdSquare.VERTICES,
-        ...g_gridMesh
-    ];
-
-    const colors = [
-        ...buildColorAttributes(firstSquare.VERTEX_COUNT),
-        ...buildColorAttributes(secondSquare.VERTEX_COUNT),
-        ...buildColorAttributes(thirdSquare.VERTEX_COUNT),
-        ...buildGridAttributes(1, 1, [0.0, 1.0, 0.0])[1]
-    ];
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
-}
 
 function setupCamera(){
     slider_input = document.getElementById('sliderX')
@@ -636,193 +498,228 @@ function setupCamera(){
         updateFar(event.target.value)
     })
 
-    updateCameraX(0)
-    updateCameraY(0)
-    updateCameraZ(0.25)
+    updateCameraX(0.77)
+    updateCameraY(0.21)
+    updateCameraZ(1)
 
 
 }
 
-function drawShape(model, world, shape) {
-    // Set transformation matrices
-    gl.uniformMatrix4fv(g_u_model_ref, false, new Float32Array(model));
-    gl.uniformMatrix4fv(g_u_world_ref, false, new Float32Array(world));
+function setFlame(){
+    var flame_size = 0.1
 
-    // Bind the vertex buffer and set up the a_Position attribute
-    gl.bindBuffer(gl.ARRAY_BUFFER, shape.BUFFER);
-    setupVec3('a_Position', 0, 0);
+    g_flame_modelMatrix1 = g_flame_modelMatrix1.setScale(flame_size, flame_size, flame_size)
+    g_flame_modelMatrix1 = g_flame_modelMatrix1.rotate(-90, 0, 0, 1)
+    g_flame_modelMatrix1 = g_flame_modelMatrix1.translate(-0.55, 7.25, 1)
+    
 
-    // Bind the color buffer and set up the a_color attribute
-    gl.bindBuffer(gl.ARRAY_BUFFER, shape.COLOR_BUFFER);
-    setupVec3('a_Color', 0, 0);
+    g_flame_modelMatrix2 = g_flame_modelMatrix2.setScale(flame_size, flame_size, flame_size)
+    g_flame_modelMatrix2 = g_flame_modelMatrix2.rotate(-90, 0, 0, 1 )
+    g_flame_modelMatrix2 = g_flame_modelMatrix2.translate(-0.55, 7.25, -1)
+    
 
-    // Draw the shape
-    gl.drawArrays(gl.TRIANGLES, 0, shape.VERTEX_COUNT);
+    moveShip(movement.HORIZONTAL, 2.5)
 }
 
-function buildOriginalColorAttributes(vertex_count) {
-    var colors = []
-    for (var i = 0; i < vertex_count / 3; i++) {
-        // three vertices per triangle
-        for (var vert = 0; vert < 3; vert++) {
-            var shade = (i * 3) / vertex_count
-            colors.push(shade, shade, 1.0)
-        }
+
+
+function tick() {
+    var deltaTime = Date.now() - g_lastFrameMS;
+    g_lastFrameMS = Date.now();
+
+    let angle = ROTATION_SPEED * deltaTime;
+
+    g_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis));
+    g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...g_rotationAxis));
+    g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...g_rotationAxis));
+    
+
+    translate_time += deltaTime;
+
+    if (translate_time >= 3500) {
+        translate_time = 0;
+        reset_moving_shapes();
+        setSpeed();
+        updateColors();
+    }else{
+        flickerFlame(deltaTime)
     }
 
-    return colors
+    moveShip(movement.HORIZONTAL, -0.01)
+
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, -secondSquare.SPEED);
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, -thirdSquare.SPEED);
+
+    draw();
+    requestAnimationFrame(tick);
 }
-function buildFlameColor(vertex_count, time) {
-    var colors = [];
-    var triangle_count = vertex_count / 3;
-    let flickerFactor = Math.sin(time * 2) * 0.1; // Create slight variation
 
-    for (var i = 0; i < triangle_count; i++) {
-        var shade = i / triangle_count; // Normalized gradient (0 to 1)
-        
-        // 🔥 Introduce "dissolve" probability
-        let fadeFactor = Math.random() < (shade * 0.7 + 0.2) ? 0 : 1; // Higher = more likely to fade
+function moveShip(move, distance){
+    g_ship_modelMatrix = move3DShape(g_ship_modelMatrix, move, distance)
+    g_flame_modelMatrix1 = move3DShape(g_flame_modelMatrix1, move, distance)
+    g_flame_modelMatrix2 = move3DShape(g_flame_modelMatrix2, move, distance)
+}
 
-        // More dynamic flame color transition
-        var red = 1.0 * fadeFactor;
-        var green = Math.max(0, 0.4 * (1 - shade) + flickerFactor) * fadeFactor;
-        var blue = Math.max(0, 0.1 * (1 - shade * 2)) * fadeFactor;
-        
-        for (var vert = 0; vert < 3; vert++) {
-            colors.push(red, green, blue);
-        }
+function updateColors() {
+    let gridInfo = buildGridAttributes(1, 1, [1.0, 1.0, 1.0]);
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_shipMesh,
+        ...flame1.VERTICES,
+        ...flame2.VERTICES,
+        ...gridInfo[0]
+    ];
+
+    firstSquare.COLORS = buildColorAttributes(firstSquare.VERTEX_COUNT)
+    secondSquare.COLORS = buildColorAttributes(secondSquare.VERTEX_COUNT)
+    thirdSquare.COLORS = buildColorAttributes(thirdSquare.VERTEX_COUNT)
+    flame1.COLORS = flame1.updateColors()
+    flame2.COLORS = flame2.updateColors()
+
+    let colors = [
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS,
+        ...gridInfo[1]
+    ];
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
+}
+
+function flickerFlame(deltaTime) {
+
+    let gridInfo = buildGridAttributes(1, 1, [1.0, 1.0, 1.0]);
+    var amplitude, frequency, orth_freqency, orth_amplitude
+    if (isOrth){
+        orth_freqency = 6
+        orth_amplitude = 20
+
+        // important for orthographic flicker
+        amplitude = 0.5
+        frequency = 9
+    }else{
+        orth_freqency = 2
+        orth_amplitude = 0.1
+
+        // important for orthographic flicker
+        amplitude = 0.5
+        frequency = 9
+
     }
-    return colors;
+
+    flame1.pulseAndFlicker(deltaTime, orth_freqency, amplitude = orth_amplitude);
+    flame1.moveFlameTip(deltaTime, frequency, amplitude);
+    // flame1.dissolveFlame(deltaTime);
+
+    flame2.pulseAndFlicker(deltaTime, orth_freqency-2, amplitude = orth_amplitude);
+    flame2.moveFlameTip(deltaTime, frequency, amplitude);
+    // flame2.scaleFlame(deltaTime, 2, 1.4, 2.5);
+
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_shipMesh,
+        ...flame1.VERTICES,
+        ...flame2.VERTICES,
+        ...gridInfo[0]
+    ];
+    
+    
+    let colors = [
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS,
+        ...gridInfo[1]
+    ];
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
 }
 
-// Helper to construct colors
-// makes every triangle a slightly different shade of blue
-function buildColorAttributes(vertex_count) {
+function setSpeed(){
+    let lower = 0.005
+    let upper = 0.01
+    speed1 = lower + Math.random() * (upper - lower)
+    speed2 = lower + Math.random() * (upper - lower)
 
-    const color1 = [Math.random(), Math.random(), Math.random()];
-    const color2 = [Math.random(), Math.random(), Math.random()];
-    let colors = [];
-    for (let i = 0; i < vertex_count; i++) {
-        randomNumber = Math.floor(Math.random() * 10) + 1;
-        // Alternate between color1 and color2 for each vertex
-        if (randomNumber % 2 === 0) {
-            colors.push(...color1);
-        } else {
-            colors.push(...color2); 
-        }
+    
+    secondSquare.SPEED = speed2
+    thirdSquare.SPEED = speed1
+}
+
+// draw to the screen on the next frame
+function draw() {
+    const cameraMatrix = new Matrix4().translate(-g_camera_x, -g_camera_y, -g_camera_z);
+    var projection_matrix
+    if (isOrth){
+        projection_matrix = new Matrix4().setOrtho(g_left, g_right, g_bottom, g_top, g_near_orth, g_far_orth)
+    }else{
+        projection_matrix = new Matrix4().setPerspective(g_fovy, g_aspect, g_near, g_far)
     }
-    return colors;
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+
+    // Set up position attribute
+    setupVec3('a_Position', 0, bf_info.vertexOffset);
+    
+    // Set up color attribute
+    setupVec3('a_Color', 0, bf_info.colorOffset);
+
+    // Draw first square
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_modelMatrix.elements);
+    gl.uniformMatrix4fv(g_u_world_ref, false, g_worldMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, 0, bf_info.firstSquareCount);
+
+    // Draw second square
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_second_modelMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount, 
+                 bf_info.secondSquareCount);
+
+    // Draw third square
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_third_modelMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, 
+                 bf_info.firstSquareCount + bf_info.secondSquareCount,
+                 bf_info.thirdSquareCount);
+
+    // Draw ship mesh
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_ship_modelMatrix.elements);
+    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount + bf_info.secondSquareCount + bf_info.thirdSquareCount, g_shipMesh.length / 3);
+    
+    // Draw flame mesh
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_flame_modelMatrix1.elements);
+    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount + bf_info.secondSquareCount + bf_info.thirdSquareCount + bf_info.shipMeshCount, g_flameMesh1.length / 3);
+
+    // Draw flame mesh
+    gl.uniformMatrix4fv(g_u_model_ref, false, g_flame_modelMatrix2.elements);
+    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount + bf_info.secondSquareCount + bf_info.thirdSquareCount + bf_info.shipMeshCount + bf_info.flameMesh1Count, g_flameMesh2.length / 3);
+    
+    // Draw grid
+    gl.uniformMatrix4fv(g_u_model_ref, false, new Matrix4().elements);
+    gl.uniformMatrix4fv(g_u_world_ref, false, new Matrix4().translate(0, GRID_Y_OFFSET, 0).elements);
+    gl.uniformMatrix4fv(g_u_camera_ref, false, cameraMatrix.elements);
+    gl.uniformMatrix4fv(g_u_projection_ref, false, projection_matrix.elements);
+
+
+
+    gl.drawArrays(gl.LINES, 
+                 bf_info.firstSquareCount + bf_info.secondSquareCount + 
+                 bf_info.thirdSquareCount + bf_info.shipMeshCount + bf_info.flameMesh1Count+ bf_info.flameMesh2Count,
+                 bf_info.gridCount);
 }
-
-
-// Event to change which rotation is selected
-function updateRotation() {
-    var rotateX = document.getElementById('rotateX')
-    var rotateY = document.getElementById('rotateY')
-    var rotateZ = document.getElementById('rotateZ')
-
-    g_rotationAxis[0] = Number(rotateX.checked)
-    g_rotationAxis[1] = Number(rotateY.checked)
-    g_rotationAxis[2] = Number(rotateZ.checked)
-}
-
-function updateNear_orth(amount) {
-    label = document.getElementById('orth_near')
-    label.textContent = `orth_Near: ${Number(amount).toFixed(2)}`
-    g_near_orth = Number(amount)
-}
-
-function updateFar_orth(amount) {
-    label = document.getElementById('orth_far')
-    label.textContent = `orth_Far: ${Number(amount).toFixed(2)}`
-    g_far_orth = Number(amount)
-}
-
-function updateLeft_orth(amount) {
-    label = document.getElementById('orth_left')
-    label.textContent = `orth_Left: ${Number(amount).toFixed(2)}`
-    g_left = Number(amount)
-}
-
-function updateRight_orth(amount) {
-    label = document.getElementById('orth_right')
-    label.textContent = `orth_Right: ${Number(amount).toFixed(2)}`
-    g_right = Number(amount)
-}
-
-function updateBottom_orth(amount) {
-    label = document.getElementById('orth_bottom')
-    label.textContent = `orth_Bottom: ${Number(amount).toFixed(2)}`
-    g_bottom = Number(amount)
-}
-
-function updateTop_orth(amount) {
-    label = document.getElementById('orth_top')
-    label.textContent = `orth_Top: ${Number(amount).toFixed(2)}`
-    g_top = Number(amount)
-}
-
-
-function updateCameraX(amount) {
-    label = document.getElementById('cameraX')
-    label.textContent = `Camera X: ${Number(amount).toFixed(2)}`
-    g_camera_x = Number(amount)
-}
-function updateCameraY(amount) {
-    label = document.getElementById('cameraY')
-    label.textContent = `Camera Y: ${Number(amount).toFixed(2)}`
-    g_camera_y = Number(amount)
-}
-function updateCameraZ(amount) {
-    label = document.getElementById('cameraZ')
-    label.textContent = `Camera Z: ${Number(amount).toFixed(2)}`
-    g_camera_z = Number(amount)
-}
-
-function updateFOVY(amount) {
-    label = document.getElementById('fovy')
-    label.textContent = `FOVY: ${Number(amount).toFixed(2)}`
-    g_fovy = Number(amount)
-}
-
-function updateAspect(amount) {
-    label = document.getElementById('aspect')
-    label.textContent = `Aspect: ${Number(amount).toFixed(2)}`
-    g_aspect = Number(amount)
-}
-
-function updateNear(amount) {
-    label = document.getElementById('near')
-    label.textContent = `Near: ${Number(amount).toFixed(2)}`
-    g_near = Number(amount)
-}
-
-function updateFar(amount) {
-    label = document.getElementById('far')
-    label.textContent = `Far: ${Number(amount).toFixed(2)}`
-    g_far = Number(amount)
-}
-
-
-function rotate45(){
-    g_modelMatrix = move3DShape(g_modelMatrix, movement.ROTATE,(45 * (Math.PI / 180)))
-}
-
-function translateLeft(){
-    g_modelMatrix = move3DShape(g_modelMatrix, movement.HORIZONTAL, -0.5)
-}
-
-function translateRight(){
-    g_modelMatrix = move3DShape(g_modelMatrix, movement.HORIZONTAL, 0.5)
-}
-
-function moveUp(){
-    g_modelMatrix = move3DShape(g_modelMatrix, movement.VERTICAL, 0.5)
-}
-
-function moveDown(){
-    g_modelMatrix = move3DShape(g_modelMatrix, movement.VERTICAL, -0.5)
-}   
 
 function reset(){
     translate_time = 0
@@ -835,9 +732,8 @@ function reset(){
     setPerspective()
 
     setSpeed()
-
-
     reset_moving_shapes()
+    
 
 }
 
@@ -848,9 +744,9 @@ function switchPerspective(){
 }
 
 function setPerspective(){
-    updateFOVY(168)
-    updateAspect(1)
-    updateNear(1)
+    updateFOVY(130)
+    updateAspect(1.32)
+    updateNear(2)
     updateFar(.11)
 }
 
@@ -863,30 +759,32 @@ function setOrth(){
     updateTop_orth(1)
 }
 
+
+
 function reset_moving_shapes(){
     g_second_modelMatrix = new Matrix4()
     g_second_modelMatrix = g_second_modelMatrix.setScale(other_box_scale, other_box_scale, other_box_scale)
-    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, 1)
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.HORIZONTAL, 3)
     g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.VERTICAL, 0.5)
     g_second_modelMatrix.rotate(90, 0, 0,1 )
 
     g_third_modelMatrix = new Matrix4()
     g_third_modelMatrix = g_third_modelMatrix.setScale(other_box_scale, other_box_scale, other_box_scale)
-    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, 1)
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.HORIZONTAL, 3)
     g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.VERTICAL, -0.5)
     g_third_modelMatrix.rotate(90, 0, 0,1 )
 
     g_ship_modelMatrix = new Matrix4()
-    ship_size = 0.025
+    var ship_size = 0.025
     g_ship_modelMatrix = g_ship_modelMatrix.setScale(ship_size, ship_size, ship_size)
-    // g_ship_modelMatrix = move3DShape(g_ship_modelMatrix, movement.HORIZONTAL, 1)
-    // g_ship_modelMatrix.rotate(-45, 0, 1,0 )
-
     g_ship_modelMatrix = move3DShape(g_ship_modelMatrix, movement.HORIZONTAL, 0.5)
-    g_ship_modelMatrix.rotate(0, 0, 1,0)
-    //new Matrix4().setScale(ship_size, ship_size, ship_size).elements
+    g_ship_modelMatrix.rotate(-90, 0, 1,0)
 
-    g_flame_modelMatrix = new Matrix4()
-    ship_size = 0.5
-    g_flame_modelMatrix = g_flame_modelMatrix.setScale(ship_size, ship_size, ship_size)
+
+    g_flame_modelMatrix1 = new Matrix4()
+    g_flame_modelMatrix2 = new Matrix4()
+    g_flame_modelMatrix1.set(g_ship_modelMatrix)
+    g_flame_modelMatrix2.set(g_ship_modelMatrix)
+
+    setFlame()
 }

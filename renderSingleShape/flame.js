@@ -279,29 +279,15 @@ function main() {
  * I made everything sequential for this class to make the logic easier to follow
  */
 async function loadOBJFiles() {
-    // Fetch the ship mesh
-    const shipData = await fetch('./resources/ship.obj').then(response => response.text());
-
-    // Fetch the flame mesh (cone.obj)
-    const flameData = await fetch('./resources/cone.obj').then(response => response.text());
-
-    // Parse the ship mesh
-    g_shipMesh = [];
-    readObjFile(shipData, g_shipMesh);
-
-    // Parse the flame mesh
-    g_flameMesh = [];
-    readObjFile(flameData, g_flameMesh);
-
-    // Assign flame data to all flames in the system
+    data = await fetch('./resources/cone.obj').then(response => response.text());
     flameSystem.flames.forEach(flame => {
-        flame.initializeVertices(g_flameMesh);
+        readObjFile(data, flame.VERTICES);
+        flame.setLength();
+        flame.warpFlameTaper(0.7);
     });
 
-    // Start rendering after all files are loaded
     startRendering();
 }
-
 
 
 function startRendering() {
