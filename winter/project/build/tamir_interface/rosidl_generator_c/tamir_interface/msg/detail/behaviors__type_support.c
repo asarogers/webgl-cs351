@@ -5,9 +5,9 @@
 #include <string.h>
 
 #include "tamir_interface/msg/detail/behaviors__type_support.h"
+#include "tamir_interface/msg/detail/behaviors__struct.h"
 #include "tamir_interface/msg/detail/behaviors__functions.h"
 #include "rosidl_typesupport_interface/macros.h"
-#include "tamir_interface/msg/detail/behaviors__struct.h"
 
 #ifdef __cplusplus
 extern "C"

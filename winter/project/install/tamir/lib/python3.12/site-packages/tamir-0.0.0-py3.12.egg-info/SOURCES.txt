@@ -8,6 +8,8 @@ setup.py
 ../../build/tamir/tamir.egg-info/requires.txt
 ../../build/tamir/tamir.egg-info/top_level.txt
 ../../build/tamir/tamir.egg-info/zip-safe
+config/tags.yaml
+config/toast_view.rviz
 launch/playmusic.launch.py
 launch/startup.launch.py
 resource/tamir
@@ -17,6 +19,7 @@ sound/experiment.mp3
 sound/high_pitch.mp3
 tamir/Bluetooth_Node.py
 tamir/__init__.py
+tamir/camera_localizer.py
 tamir/playmusic.py
 tamir/tamir_interface.py
 tamir/vision.py

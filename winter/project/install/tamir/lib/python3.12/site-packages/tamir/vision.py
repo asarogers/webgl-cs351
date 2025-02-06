@@ -22,11 +22,15 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
-
+from apriltag_msgs.msg import AprilTagDetectionArray
 import cv2
 import numpy as np
 from ultralytics import YOLO
 from tamir_interface.msg import Behaviors, BehaviorList
+import geometry_msgs
+import tf2_ros
+import geometry_msgs.msg
+from geometry_msgs.msg import Pose, Transform
 
 class YoloVisualizer(Node):
     def __init__(self):
@@ -70,25 +74,71 @@ class YoloVisualizer(Node):
         self.behavior= {
             "dogIsInBathroom" : False
         }
+        self.target_detection = False
+        self.target_centre = None
+        self.counter = 0
+        self.door_coord = None
 
         self.behaviorPublisher = self.create_publisher(BehaviorList, "behavior_msg", 10)
+        self.detection_sub = self.create_subscription(AprilTagDetectionArray, 'detections',
+                                                      self.detection_callback, 10)
+        
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self) 
     
+    def detection_callback(self, msg):
+        """
+        Handle AprilTag detection messages.
+
+        Extracts information about the first detected tag (e.g., ID, center coordinates),
+        updates the detection status, and logs the detection.
+
+        :param msg: AprilTag detection array message containing detected tag details.
+        :type msg: apriltag_msgs.msg.AprilTagDetectionArray
+
+        """
+        if len(msg.detections) > 0:
+            detection = msg.detections[0]
+            # self.logger(f'Tag Data: {detection}')
+            self.target_detection = True
+            self.target_centre = (
+                int(detection.centre.x),
+                int(detection.centre.y)
+            )
+        else:
+            self.target_detection = False
+            self.target_centre = None
+
     def checkBehavior(self,class_name, x, y, z):
+        if self.door_coord:
+            offset = 0.4
+            # self.logger(f"dog = {round(x, 4)} | door x = {self.door_coord["x"]} {self.door_coord["y1"]}")
+            if self.door_coord["x1"]- offset < x <= (self.door_coord["x2"]):
+                # self.logger("Dog is between")
+                # self.logger(f"{self.door_coord["x1"]-offset} < {round(x, 4)} < {self.door_coord["x2"]}")
+                self.logger(f"dog = {y}")
+
+                if y < 0.4:
+                    self.behavior["dogIsInBathroom"] = True
+                    self.logger("Dog is in bathroom")
+                else:
+                    self.behavior["dogIsInBathroom"] = False
         # self.logger(f"3D Coordinates of {class_name}: x={x:.3f}, y={y:.3f}, z={z:.3f}")
         # self.logger(f"3D Coords of {class_name}: x={x:.3f}")
-        if z >= self.door_z:
-        #     self.logger("passed by z")
-        #     self.logger(f"3D Coords of {class_name}: x={x:.3f}")
-            door_x_min = self.door_x - (self.door_width / 2)
-            door_x_max = self.door_x + (self.door_width / 2)
-            # self.logger(f"{class_name}:  {door_x_min} < {x:.3f} <= {door_x_max}")
+        # if z >= self.door_z:
+        # #     self.logger("passed by z")
+        # #     self.logger(f"3D Coords of {class_name}: x={x:.3f}")
+        #     door_x_min = self.door_x - (self.door_width / 2)
+        #     door_x_max = self.door_x + (self.door_width / 2)
+        #     # self.logger(f"{class_name}:  {door_x_min} < {x:.3f} <= {door_x_max}")
 
-            if door_x_min <= x <= door_x_max:
-                self.logger("Dog is in bathroom")
-                # self.logger(f"3D Coords of {class_name}: x={x:.3f}")
-                self.behavior["dogIsInBathroom"] = True
-        elif z < self.door_z:
-            self.behavior["dogIsInBathroom"] = False
+        #     if door_x_min <= x <= door_x_max:
+        #         self.logger("Dog is in bathroom")self.behavior["dogIsInBathroom"] = False
+        #         # self.logger(f"3D Coords of {class_name}: x={x:.3f}")
+        #         # 
+        # elif z < self.door_z:
+        #     self.behavior["dogIsInBathroom"] = False
 
 
     def camera_info_callback(self, camera_info_msg):
@@ -107,50 +157,77 @@ class YoloVisualizer(Node):
         # Run YOLO inference
         results = self.model.predict(current_frame, verbose=False)
 
+        # Do nothing until results show on the screen
         if len(results) > 0:
             detections = results[0].boxes
+
+            # get all of the detection boxes
             for box in detections:
+
+                # get coordinates and names of all the boxes 
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
                 conf = float(box.conf[0])
                 cls_id = int(box.cls[0])
                 class_name = self.model.names.get(cls_id, f'class_{cls_id}')
 
-                if class_name in self.valid_names:
+                # only continue if their is a depth immage and info
+                if self.depth_image is not None and self.camera_info is not None:
+                    if self.target_detection and self.target_centre is not None:
 
-                    # Draw bounding box and label
-                    cv2.rectangle(current_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(
-                        current_frame,
-                        f"{class_name} {conf:.2f}",
-                        (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 0),
-                        2
-                    )
+                        # draw a circle where the apriltag is detected
+                        # cv2.circle(current_frame, self.target_centre, 10, (0, 255, 0), -1)
+                        target_depth = self.depth_image[self.target_centre]
+                        # only continue if there is some depth
+                        if target_depth > 0:
+                            target_x, target_y, target_z = self.pixel_to_3d(self.target_centre[0], self.target_centre[1], target_depth)
+                            target_x = target_x/1000
+                            target_y = target_y /1000
+                            target_z = target_z / 1000
+                            self.door_coord = {
+                                "x1" : round(target_x, 4),
+                                "y" : round(target_y, 4),
+                                "x2" : round(target_x + 0.5, 4),
+                                "z" : round(target_z, 4),
+                            }
+                            # self.logger(f"target center = {self.target_centre}")
+                            # self.logger(f"{self.door_coord}")
+                            self.sendToRviz("right_door_frame", target_x, target_y, target_z)
+                            
+                    
+                    if class_name in self.valid_names:
+                        # Draw bounding box and label
+                        cv2.rectangle(current_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(
+                            current_frame,
+                            f"{class_name} {conf:.2f}",
+                            (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (0, 255, 0),
+                            2
+                        )
 
-                    # Get depth value and compute 3D coordinates
-                    if self.depth_image is not None and self.camera_info is not None:
-                        
                         center_x = int((x1 + x2) / 2)
                         center_y = int((y1 + y2) / 2)
                         depth_value = self.depth_image[center_y, center_x]
 
-                        if depth_value > 0:  # Ensure valid depth
+                        if depth_value > 0:
                             x, y, z = self.pixel_to_3d(center_x, center_y, depth_value)
                             x = x /1000
                             y = y /1000
                             z = z /1000
                             self.checkBehavior(class_name, x, y, z)
+                            self.sendToRviz(f"{class_name}_frame", x, y, z)
+
                             
-                    elif  self.depth_image is None:
-                        self.logger("No depth image")
-                    elif self.camera_info is  None:
-                        self.logger("No camera info")
-                    else:
-                        self.logger("A different error")
-            if self.behavior["dogIsInBathroom"]:
-                self.logger("****Dog found in bathroom")
+            #         elif  self.depth_image is None:
+            #             self.logger("No depth image")
+            #         elif self.camera_info is  None:
+            #             self.logger("No camera info")
+            #         else:
+            #             self.logger("A different error")
+            # if self.behavior["dogIsInBathroom"]:
+            #     self.logger("****Dog found in bathroom")
             msg = BehaviorList()
 
             behavior = Behaviors()
@@ -167,6 +244,23 @@ class YoloVisualizer(Node):
         cv2.imshow('YOLO Detections with Depth', current_frame)
         cv2.waitKey(1)
 
+    def sendToRviz(self, name, x, y, z):
+        t = geometry_msgs.msg.TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "world"
+        t.child_frame_id = name
+
+        t.transform.translation.x = x
+        t.transform.translation.y = y
+        t.transform.translation.z = z - 2.0
+
+        t.transform.rotation.x = 0.0
+        t.transform.rotation.y = 0.0
+        t.transform.rotation.z = 0.0
+        t.transform.rotation.w = 1.0  # No rotation
+
+        self.tf_broadcaster.sendTransform(t)
+
     def pixel_to_3d(self, pixel_x, pixel_y, depth):
         """Convert pixel coordinates and depth to 3D coordinates."""
         cx = self.camera_info.k[2]  # Principal point X
@@ -179,6 +273,12 @@ class YoloVisualizer(Node):
         z = depth
 
         return x, y, z
+    
+    def capture_picture(self, current_frame, x1, x2, y1, y2):
+        self.counter +=1
+        filename = f"test_image{self.counter}.jpg"
+        cv2.imwrite(filename, current_frame[y1:y2, x1:x2])
+        print("Image saved!")
 
 
 def main(args=None):
