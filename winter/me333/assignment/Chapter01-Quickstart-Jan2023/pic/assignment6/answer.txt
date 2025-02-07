@@ -1,0 +1,41 @@
+3)
+a.
+	c3 = c1/c2;
+	9d0085b4:	83c30010 	lb	v1,16(s8)
+	9d0085b8:	83c20011 	lb	v0,17(s8)
+	9d0085bc:	0062001a 	div	zero,v1,v0
+	9d0085c0:	004001f4 	teq	v0,zero,0x7
+	9d0085c4:	00001010 	mfhi	v0
+	9d0085c8:	00001012 	mflo	v0
+	9d0085cc:	a3c20048 	sb	v0,72(s8)
+		
+b) 
+	any addition, substraction, or multiplication of int is faster than the rest: 
+	i3 = i1+i2;
+	9d0085d0:	8fc30014 	lw	v1,20(s8)
+	9d0085d4:	8fc20018 	lw	v0,24(s8)
+	9d0085d8:	00621021 	addu	v0,v1,v0
+	9d0085dc:	afc2004c 	sw	v0,76(s8)
+	
+	the extra line is necessary to extend the char to an int, then run the operation
+	
+c)
+	char	int	long long 	float	    long double
++	5.0(1)	1.0(4)	1.375(8)	J		J
+-	5.0(1)	1.0(4)	1.375(8)	J		J
+*	5.0(1)	1.0(4)	1.375(8)	J		J
+/	7.0(1)	1.25(5)	1.375(8)	J		J
+
+4)
+	
+  u3 = u1 & u2; // bitwise AND
+  1.0(4)
+  
+  u3 = u1 | u2; // bitwise OR
+  1.0(4)
+  
+  u3 = u2 << 4; // shift left 4 spaces, or multiply by 2ˆ4 = 16
+  0.75(4)
+  
+  u3 = u1 >> 3; // shift right 3 spaces, or divide by 2ˆ3 = 8
+  0.75(4)
