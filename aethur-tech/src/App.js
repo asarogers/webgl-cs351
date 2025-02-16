@@ -4,12 +4,13 @@ import { theme } from './components/colorTheme';
 import HeroSection from './pages/landing/components/HeroSection';
 import Footer from './components/Footer';
 import "./App.css"
+import Landing from './pages/landing/Landing';
 
 function App() {
   return (
     <div className="App">
       <ThemeProvider theme={theme}>
-        <HeroSection />
+        <Landing />
         < Footer/>
       </ThemeProvider>
     </div>
