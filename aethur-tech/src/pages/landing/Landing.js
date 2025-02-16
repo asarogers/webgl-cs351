@@ -2,7 +2,11 @@ import HeroSection from "./components/HeroSection";
 import { AppBar, Toolbar, Typography, Box, Button, Grid, Container } from "@mui/material";
 import backgroundImage from "./img/background1.png"; // Import background image
 import Navbar from "../../components/Navbar";
-
+import AboutUs from "./components/AbputUs";
+import Services from "./components/OurServices";
+import Testimonials from "./components/Testimonials";
+import Projects from "./components/Projects";
+import BlogSection from "./components/Blogs";
 export default function Landing() {
     return (
         <Box
@@ -21,6 +25,11 @@ export default function Landing() {
             <Container maxWidth="lg">
                 <Navbar />
                 <HeroSection />
+                < AboutUs/>
+                <Services />
+                <Testimonials />
+                <Projects />
+                <BlogSection />
             </Container>
         </Box>
     )
