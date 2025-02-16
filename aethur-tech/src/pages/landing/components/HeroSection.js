@@ -1,9 +1,9 @@
 import React from "react";
 import { AppBar, Toolbar, Typography, Box, Button, Grid, Container } from "@mui/material";
-import Navbar from "../../components/Navbar";
-import campusConnex from "../../images/campusConnex.png";
-import commercial from "../../images/commercial.mp4";
-import backgroundImage from "./img/background1.png"; // Import background image
+import Navbar from "../../../components/Navbar";
+import campusConnex from "../../../images/campusConnex.png"; //campusConnex.png
+import commercial from "../../../images/commercial.mp4"
+import backgroundImage from "../img/background1.png"; // Import background image
 
 export default function HeroSection() {
     return (
