@@ -97,7 +97,7 @@ export default function Navbar() {
 
         ) : (
           <>
-            <Button variant="call_to_action">Contact Us</Button>
+            <Button variant="call_to_action" sx={{marginRight: "60px"}}>Contact Us</Button>
 
             <IconButton onClick={toggleMenu} sx={{ color: "#fff" }}>
               <FontAwesomeIcon icon={openMenu ? faX : faBars} />
