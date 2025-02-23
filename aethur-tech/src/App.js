@@ -8,7 +8,7 @@ import Landing from './pages/landing/Landing';
 
 function App() {
   return (
-    <div className="App">
+    <div className="App" style={{background:"black"}}>
       <ThemeProvider theme={theme}>
         <Landing />
         < Footer/>

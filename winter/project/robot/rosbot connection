@@ -1,0 +1,87 @@
+rosbot
+wifi:
+fping -a -g 172.20.10.0/24
+ssh husarion@172.20.10.5
+
+
+---------check configs----------
+docker compose config --services
+
+
+put laptop and rosbot 2r on the same network
+https://app.husarnet.com/network/12969#
+
+-create account
+click add element
+copy the join code
+
+past into your laptop and rosbot2
+export JOINCODE="fc94:b01d:1803:8dd8:b293:5c7d:7639:932a/MJ29Jt2vpFVt3hpbAr5HLJ"
+
+then run in rosbot2 terminal
+sudo ~/remote_desktop_start.sh
+
+pc
+sudo export JOINCODE="fc94:b01d:1803:8dd8:b293:5c7d:7639:932a/MJ29Jt2vpFVt3hpbAr5HLJ"
+sudo just connect-husarnet $JOINCODE my-laptop
+
+
+cd rosbot-autonomy # remember to run all "just" commands in the repo root folder
+sudo export JOINCODE="fc94:b01d:1803:8dd8:b293:5c7d:7639:932a/MJ29Jt2vpFVt3hpbAr5HLJ"
+sudo husarnet join $JOINCODE rosbot2r
+
+flash firmware
+	docker compose pull
+
+	docker stop rosbot microros || true && docker run \
+	--rm -it --privileged \
+	husarion/rosbot:humble-0.6.1-20230712 \
+	flash-firmware.py /root/firmware.bin
+
+	docker compose up -d rosbot microros
+
+-----------------------------------------------------------------------------------
+----------------------------------
+start mapping
+	just start-rosbot
+
+open rviz on computer
+	just start-pc
+
+control robot
+	just run-teleop
+------------------------------------
+
+-----------------------------------------------------------------------------------
+setup camera
+
+cd repo/winter/project
+git clone https://github.com/husarion/rosbot-telepresence.git
+cd rosbot-telepresence
+just sync
+just start-pc
+
+open a new terminal and ssh into the robot
+cd repo
+git clone https://github.com/husarion/rosbot-telepresence.git
+cd rosbot-telepresence
+just flash-firmware
+just start-rosbot
+---------------------------------------------------------------------
+send data from rosbot to laptop
+
+- ensure the laptop and rosbot are on the same network
+- rosbot
+	docker compose up -d microros astra astra
+- laptop
+	rviz2 & select the topic you want to see
+
+
+
+
+
+
+
+
+
+

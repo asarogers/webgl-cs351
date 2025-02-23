@@ -1,0 +1,135 @@
+import { useEffect, useRef } from "react";
+import * as THREE from 'three';
+
+const Canvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.z = 2;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvasRef.current,
+      antialias: true
+    });
+
+    const setSize = () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    };
+    setSize();
+
+    // Create gradient shader material
+    const createGlowLayer = (radius, opacity) => {
+      const geometry = new THREE.CircleGeometry(radius, 64);
+      
+      // Define shader materials
+      const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `;
+
+      const fragmentShader = `
+        varying vec2 vUv;
+        uniform float opacity;
+        
+        void main() {
+          vec3 color1 = vec3(1.0, 0.67, 0.0); // Warmer yellow #ffaa00
+          vec3 color2 = vec3(0.8, 0.5, 0.0);  // Darker orange
+          
+          // Create gradient based on y position
+          vec3 finalColor = mix(color1, color2, vUv.y);
+          
+          // Add radial falloff
+          float dist = length(vUv - vec2(0.5));
+          float alpha = opacity * (1.0 - smoothstep(0.0, 0.5, dist));
+          
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `;
+
+      const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+        uniforms: {
+          opacity: { value: opacity }
+        }
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.x = -1.5;
+      mesh.position.y = -1;
+
+
+      return mesh;
+    };
+
+    // Calculate opacity values
+    const division = 4/5;
+    const opacities = Array(8).fill(0).map((_, i) => {
+      if (i === 0) return 0.025;
+      return 0.15 * Math.pow(division, i);
+    });
+
+    const layers = [
+      { radius: 0.3, opacity: opacities[0] },
+      { radius: 0.7, opacity: opacities[1] },
+      { radius: 0.5, opacity: opacities[2] },
+      { radius: 0.6, opacity: opacities[3] },
+      { radius: 0.7, opacity: opacities[4] },
+      { radius: 0.8, opacity: opacities[5] },
+      { radius: 0.9, opacity: opacities[6] },
+      { radius: 1.0, opacity: opacities[7] }
+    ];
+
+    const glowLayers = layers.map(({ radius, opacity }) => {
+      const layer = createGlowLayer(radius, opacity);
+      scene.add(layer);
+      return layer;
+    });
+
+    const handleResize = () => {
+      setSize();
+    };
+    window.addEventListener('resize', handleResize);
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+      glowLayers.forEach(layer => {
+        layer.geometry.dispose();
+        layer.material.dispose();
+      });
+    };
+  }, []);
+
+  return (
+    <canvas
+    ref={canvasRef}
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      display: 'block',
+      zIndex: 2
+    }}
+  />
+  );
+};
+
+export default Canvas;

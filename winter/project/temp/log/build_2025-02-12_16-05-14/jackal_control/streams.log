@@ -1,0 +1,40 @@
+[0.014s] Invoking command in '/home/asaace00/repo/winter/project/temp/build/jackal_control': VIRTUAL_ENV_PROMPT=(env_rosbot) /usr/bin/cmake /home/asaace00/repo/winter/project/temp/jackal/jackal_control -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/home/asaace00/repo/winter/project/temp/install/jackal_control
+[0.021s] [0mCMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
+[0.021s]   Compatibility with CMake < 3.5 will be removed from a future version of
+[0.022s]   CMake.
+[0.022s] 
+[0.022s]   Update the VERSION argument <min> value or use a ...<max> suffix to tell
+[0.022s]   CMake that the project does not need compatibility with older versions.
+[0.022s] 
+[0.023s] [0m
+[0.054s] -- The C compiler identification is GNU 13.2.0
+[0.089s] -- The CXX compiler identification is GNU 13.2.0
+[0.102s] -- Detecting C compiler ABI info
+[0.159s] -- Detecting C compiler ABI info - done
+[0.164s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.164s] -- Detecting C compile features
+[0.164s] -- Detecting C compile features - done
+[0.171s] -- Detecting CXX compiler ABI info
+[0.242s] -- Detecting CXX compiler ABI info - done
+[0.249s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.249s] -- Detecting CXX compile features
+[0.249s] -- Detecting CXX compile features - done
+[0.258s] [31mCMake Error at CMakeLists.txt:4 (find_package):
+[0.258s]   By not providing "Findcatkin.cmake" in CMAKE_MODULE_PATH this project has
+[0.258s]   asked CMake to find a package configuration file provided by "catkin", but
+[0.258s]   CMake did not find one.
+[0.259s] 
+[0.259s]   Could not find a package configuration file provided by "catkin" with any
+[0.259s]   of the following names:
+[0.259s] 
+[0.259s]     catkinConfig.cmake
+[0.259s]     catkin-config.cmake
+[0.259s] 
+[0.259s]   Add the installation prefix of "catkin" to CMAKE_PREFIX_PATH or set
+[0.259s]   "catkin_DIR" to a directory containing one of the above files.  If "catkin"
+[0.260s]   provides a separate development package or SDK, be sure it has been
+[0.260s]   installed.
+[0.260s] 
+[0.260s] [0m
+[0.260s] -- Configuring incomplete, errors occurred!
+[0.265s] Invoked command in '/home/asaace00/repo/winter/project/temp/build/jackal_control' returned '1': VIRTUAL_ENV_PROMPT=(env_rosbot) /usr/bin/cmake /home/asaace00/repo/winter/project/temp/jackal/jackal_control -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/home/asaace00/repo/winter/project/temp/install/jackal_control

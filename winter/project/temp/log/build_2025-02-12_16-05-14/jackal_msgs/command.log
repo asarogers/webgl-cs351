@@ -1,0 +1,1 @@
+Invoking command in '/home/asaace00/repo/winter/project/temp/build/jackal_msgs': VIRTUAL_ENV_PROMPT=(env_rosbot) /usr/bin/cmake /home/asaace00/repo/winter/project/temp/jackal/jackal_msgs -DCATKIN_INSTALL_INTO_PREFIX_ROOT=0 -DCMAKE_INSTALL_PREFIX=/home/asaace00/repo/winter/project/temp/install/jackal_msgs
