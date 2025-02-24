@@ -59,7 +59,7 @@ var g_top
 var g_bottom
 var first_square_scale = 0.15
 var other_box_scale = 0.25
-var isOrth = false
+var isOrth = true
 
 
 
@@ -350,11 +350,9 @@ function startRendering(){
 
 
     reset();
-    gl.enable(gl.DEPTH_TEST);  // Enable depth testing
-    // gl.depthFunc(gl.LESS);
-    // gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK); 
-        
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+    
     g_lastFrameMS = Date.now();
     g_rotationAxis = [0, 0, 0];
     setupCamera();
@@ -449,6 +447,35 @@ function setupCamera(){
         updateCameraZ(event.target.value)
     })
 
+    slider_input = document.getElementById('orth_sliderNear')
+    slider_input.addEventListener('input', (event) => {
+        updateNear_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderFar')
+    slider_input.addEventListener('input', (event) => {
+        updateFar_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderLeft')
+    slider_input.addEventListener('input', (event) => {
+        updateLeft_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderRight')
+    slider_input.addEventListener('input', (event) => {
+        updateRight_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderTop')
+    slider_input.addEventListener('input', (event) => {
+        updateTop_orth(event.target.value)
+    })
+
+    slider_input = document.getElementById('orth_sliderBottom')
+    slider_input.addEventListener('input', (event) => {
+        updateBottom_orth(event.target.value)
+    })
 
 
     slider_input = document.getElementById('sliderFOVY')
@@ -472,8 +499,8 @@ function setupCamera(){
     })
 
     updateCameraX(0.77)
-    updateCameraY(0.38)
-    updateCameraZ(1.71)
+    updateCameraY(0.21)
+    updateCameraZ(1)
 
 
 }
@@ -659,8 +686,7 @@ function draw() {
 
     // Draw second square
     gl.uniformMatrix4fv(g_u_model_ref, false, g_second_modelMatrix.elements);
-    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount, 
-                 bf_info.secondSquareCount);
+    gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount, bf_info.secondSquareCount);
 
     // Draw third square
     gl.uniformMatrix4fv(g_u_model_ref, false, g_third_modelMatrix.elements);
@@ -696,15 +722,12 @@ function draw() {
 
 function reset(){
     translate_time = 0
-    g_modelMatrix = new Matrix4().translate(0, 0.5)
+    g_modelMatrix = new Matrix4()
     g_worldMatrix = new Matrix4()
-
     g_modelMatrix = move3DShape(g_modelMatrix, movement.RESET, ID_MATRIX)
-
-    
-    //g_second_modelMatrix, movement.HORIZONTAL, -secondSquare.SPEED
     g_modelMatrix = g_modelMatrix.setScale(first_square_scale, first_square_scale, first_square_scale)
-    g_modelMatrix = move3DShape(g_modelMatrix, movement.VERTICAL, 0.5)
+
+    setOrth()
     setPerspective()
 
     setSpeed()
@@ -713,13 +736,26 @@ function reset(){
 
 }
 
-
+function switchPerspective(){
+    isOrth = !isOrth
+    other_box_scale = 0.15
+    first_square_scale = 0.25
+}
 
 function setPerspective(){
-    updateFOVY(84)
+    updateFOVY(130)
     updateAspect(1.32)
-    updateNear(8)
+    updateNear(2)
     updateFar(.11)
+}
+
+function setOrth(){
+    updateNear_orth(1)
+    updateFar_orth(-1)
+    updateLeft_orth(-1)
+    updateRight_orth(1)
+    updateBottom_orth(-1)
+    updateTop_orth(1)
 }
 
 
