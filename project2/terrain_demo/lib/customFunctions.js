@@ -190,8 +190,11 @@ function move3DShape(model, move, distance){
             break;
 
         case movement.ROTATE:
-            // 
             model.elements = mat4multiply(ROTATE(distance), model.elements)
+            break;
+            
+        case movement.DEPTH:
+            model.elements = mat4multiply(DEPTH(distance), model.elements)
             break;
 
         case movement.RESET:
@@ -243,6 +246,16 @@ function VERTICAL(q){
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, q, 0, 1
+    ]
+
+    return matrix
+}
+function DEPTH(q){
+    const matrix = [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, q, 1
     ]
 
     return matrix

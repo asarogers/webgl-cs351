@@ -44,8 +44,9 @@ var g_third_modelMatrix
 var g_ship_modelMatrix
 var g_flame_modelMatrix1, g_flame_modelMatrix2
 var g_worldMatrix
-var g_shipMesh
+var g_shipMesh, shipSpeed
 var g_flameMesh1, g_flameMesh2
+
 
 // camera/projection
 // note that we are using an identity matrix for our terrain for this demo
@@ -60,6 +61,8 @@ var g_cameraHeight
 
 // Mesh definition
 var g_terrainMesh
+var isPaused = false; // Boolean to track the pause state
+
 
 // Key states
 var g_movingUp
@@ -268,6 +271,7 @@ const FLOAT_SIZE = 4;
 const movement = Object.freeze({
     HORIZONTAL: "horizontal",
     VERTICAL: "vertical",
+    DEPTH: "depth",
     TEST: "test",
     ROTATE: "rotate",
     RESET: "reset"
@@ -282,6 +286,15 @@ var data = {}
 let translate_time;
 var g_rotationAxis;
 let allColors = [];
+
+
+var distanceFirst = 0;
+var distanceSecond = 0;
+var distanceThird = 0;
+var initialZFirst = 0;
+var initialZSecond = 0;
+var initialZThird = 0;
+
 
 function main() {
     setupKeyBinds()
@@ -383,6 +396,7 @@ function reset(){
     // // move in view of the initial camera
     // // TODO: you may want to move your terrain!  This is just placed for the demo
     // g_terrainWorldMatrix = new Matrix4().rotate(90, 0, 1, 0)//.translate(-bf_info.options.width / 2, -bf_info.options.height, -bf_info.options.depth / 2)
+    setSpeed()
     reset_moving_shapes()
 }
 
@@ -526,36 +540,95 @@ const CAMERA_SPEED = .01
 const CAMERA_ROT_SPEED = .1
 
 // function to apply all the logic for a single frame tick
+// Add this variable at the top with other global variables
+let animationFrameId = null;
+
+
+
 function tick() {
+    if (isPaused) {
+        draw();
+        animationFrameId = requestAnimationFrame(tick, g_canvas);
+        return;
+    }
+
     g_rotationAxis = [1, 0, 0];
-    mesh_rotation = [0, 1, 0]
-    // time since the last frame
+    mesh_rotation = [0, 1, 0];
+    
+    // Time and camera updates
     var deltaTime = Date.now() - g_lastFrameMS;
     g_lastFrameMS = Date.now();
 
-    let angle = ROTATION_SPEED * deltaTime;
-
-    g_first_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis));
+    // Movement logic for squares
+    g_first_modelMatrix.concat(new Matrix4().setRotate(ROTATION_SPEED * deltaTime, ...g_rotationAxis));
     g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...mesh_rotation));
     g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...mesh_rotation));
 
+    // Update the distance traveled by each mesh based on their z position
+    distanceFirst = Math.abs(g_first_modelMatrix.elements[14] - initialZFirst);
+    distanceSecond = Math.abs(g_second_modelMatrix.elements[14] - initialZSecond);
+    distanceThird = Math.abs(g_ship_modelMatrix.elements[14] - initialZThird);
+
+    // Check which mesh has traveled the farthest
+   
+
+    // Continue with the rest of the game logic
     translate_time += deltaTime;
-    // console.log(translate_time)
+    moveShip(movement.DEPTH, shipSpeed);
+    g_second_modelMatrix = move3DShape(g_second_modelMatrix, movement.DEPTH, secondSquare.SPEED);
+    g_third_modelMatrix = move3DShape(g_third_modelMatrix, movement.DEPTH, thirdSquare.SPEED);
 
     if (translate_time >= 10500) {
-        updateColors()
+        if (distanceFirst > distanceSecond && distanceFirst > distanceThird) {
+            incrementScore("first");
+        } else if (distanceSecond > distanceFirst && distanceSecond > distanceThird) {
+            incrementScore("second");
+        } else if (distanceThird > distanceFirst && distanceThird > distanceSecond) {
+            incrementScore("third");
+        }
+
+        reset_moving_shapes();
+        updateColors();
         setSpeed();
         translate_time = 0;
-    }else{
-        flickerFlame(deltaTime)
+    } else {
+        flickerFlame(deltaTime);
     }
 
-    updateCameraPosition(deltaTime)
-
-    draw()
-
-    requestAnimationFrame(tick, g_canvas)
+    updateCameraPosition(deltaTime);
+    draw();
+    animationFrameId = requestAnimationFrame(tick, g_canvas);
 }
+
+
+function togglePause() {
+    isPaused = !isPaused;
+    
+    const pauseButton = document.getElementById("pauseButton");
+    if (isPaused) {
+        pauseButton.textContent = "Resume";
+    } else {
+        pauseButton.textContent = "Pause";
+        g_lastFrameMS = Date.now(); // Reset the last frame time to avoid large delta
+    }
+}
+
+var scores = {
+    first: 0,
+    second: 0,
+    third: 0
+};
+
+function incrementScore(mesh) {
+    scores[mesh]++;
+    updateScoreDisplay();
+}
+
+function updateScoreDisplay() {
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    scoreDisplay.innerHTML = `First: ${scores.first} | Second: ${scores.second} | Ship: ${scores.third}`;
+}
+
 
 function updateColors() {
 
@@ -685,10 +758,11 @@ function draw() {
 }
 
 function setSpeed(){
-    let lower = 0.005
-    let upper = 0.01
+    let lower = 0.05
+    let upper = 0.15
     speed1 = lower + Math.random() * (upper - lower)
     speed2 = lower + Math.random() * (upper - lower)
+    shipSpeed = lower + Math.random() * (upper - lower)
 
     
     secondSquare.SPEED = speed2
@@ -748,7 +822,7 @@ function setFlame(){
     g_flame_modelMatrix2 = g_flame_modelMatrix2.rotate(270, 1, 0, 0)
     
 
-    moveShip(movement.HORIZONTAL, 1.25)
+    moveShip(movement.DEPTH, -10.25)
 }
 
 function moveShip(move, distance){
@@ -756,6 +830,19 @@ function moveShip(move, distance){
     g_flame_modelMatrix1 = move3DShape(g_flame_modelMatrix1, move, distance)
     g_flame_modelMatrix2 = move3DShape(g_flame_modelMatrix2, move, distance)
 }
+
+// function togglePause() {
+//     isPaused = !isPaused; // Toggle the pause state
+
+//     // Update the button text
+//     const pauseButton = document.getElementById("pauseButton");
+//     if (isPaused) {
+//         pauseButton.textContent = "Resume";
+//     } else {
+//         pauseButton.textContent = "Pause";
+//     }
+// }
+
 
 /*
  * Helper function to update the camera position each frame
