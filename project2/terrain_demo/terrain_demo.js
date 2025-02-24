@@ -278,11 +278,10 @@ let secondSquare = new Square(generateSpaceship(0.5));
 let thirdSquare = new Square(generateSpaceship(0.5));
 var shipMesh
 
-var translate_time;
-
 var data = {}
-var translate_time;
+let translate_time;
 var g_rotationAxis;
+let allColors = [];
 
 function main() {
     setupKeyBinds()
@@ -356,6 +355,9 @@ function startRendering() {
     gl.enable(gl.CULL_FACE)
     gl.enable(gl.DEPTH_TEST)
 
+    g_lastFrameMS = Date.now();
+    
+
     // Setup for ticks
     g_lastFrameMS = Date.now()
     setUpCamera()
@@ -369,6 +371,7 @@ function reset(){
     //   noting that we are centered initially at the "midpoint"
     // We want to be a bit above the terrain initially so we can see it
     // TODO: resize the terrain as needed to "fit" with your animation
+    translate_time = 0
 
     // Keep terrain model matrix as identity since it's our "world"
     g_terrainModelMatrix = new Matrix4()
@@ -438,7 +441,7 @@ function initBuffers() {
     
     // Combine all vertices and colors
     let allVertices = [];
-    let allColors = [];
+    
     
     // Add stars
     for (const star of stars) {
@@ -524,19 +527,112 @@ const CAMERA_ROT_SPEED = .1
 
 // function to apply all the logic for a single frame tick
 function tick() {
+    g_rotationAxis = [1, 0, 0];
+    mesh_rotation = [0, 1, 0]
     // time since the last frame
-    var deltaTime
+    var deltaTime = Date.now() - g_lastFrameMS;
+    g_lastFrameMS = Date.now();
 
-    // calculate deltaTime
-    var current_time = Date.now()
-    deltaTime = current_time - g_lastFrameMS
-    g_lastFrameMS = current_time
+    let angle = ROTATION_SPEED * deltaTime;
+
+    g_first_modelMatrix.concat(new Matrix4().setRotate(angle, ...g_rotationAxis));
+    g_second_modelMatrix.concat(new Matrix4().setRotate(secondSquare.SPEED * 100, ...mesh_rotation));
+    g_third_modelMatrix.concat(new Matrix4().setRotate(thirdSquare.SPEED * 100, ...mesh_rotation));
+
+    translate_time += deltaTime;
+    // console.log(translate_time)
+
+    if (translate_time >= 10500) {
+        updateColors()
+        setSpeed();
+        translate_time = 0;
+    }else{
+        flickerFlame(deltaTime)
+    }
 
     updateCameraPosition(deltaTime)
 
     draw()
 
     requestAnimationFrame(tick, g_canvas)
+}
+
+function updateColors() {
+
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_shipMesh,
+        ...flame1.VERTICES,
+        ...flame2.VERTICES,
+        ...g_terrainMesh
+    ];
+
+    firstSquare.COLORS = buildColorAttributes(firstSquare.VERTEX_COUNT)
+    secondSquare.COLORS = buildColorAttributes(secondSquare.VERTEX_COUNT)
+    thirdSquare.COLORS = buildColorAttributes(thirdSquare.VERTEX_COUNT)
+    flame1.COLORS = flame1.updateColors()
+    flame2.COLORS = flame2.updateColors()
+
+    let colors = [
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS,
+        ...allColors
+    ];
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
+}
+
+function flickerFlame(deltaTime) {
+
+    var amplitude, frequency, orth_freqency, orth_amplitude
+   
+    orth_freqency = 2
+    orth_amplitude = 0.1
+
+    // important for orthographic flicker
+    amplitude = 0.5
+    frequency = 9
+
+
+
+    flame1.pulseAndFlicker(deltaTime, orth_freqency, amplitude = orth_amplitude);
+    flame1.moveFlameTip(deltaTime, frequency, amplitude);
+    // flame1.dissolveFlame(deltaTime);
+
+    flame2.pulseAndFlicker(deltaTime, orth_freqency-2, amplitude = orth_amplitude);
+    flame2.moveFlameTip(deltaTime, frequency, amplitude);
+    // flame2.scaleFlame(deltaTime, 2, 1.4, 2.5);
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_shipMesh,
+        ...flame1.VERTICES,
+        ...flame2.VERTICES,
+        ...g_terrainMesh
+    ];
+    
+    
+    let colors = [
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS,
+        ...allColors
+    ];
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
 }
 
 // draw to the screen on the next frame
@@ -586,6 +682,17 @@ function draw() {
         // Draw flame mesh
         gl.uniformMatrix4fv(g_u_model_ref, false, g_flame_modelMatrix2.elements);
         gl.drawArrays(gl.TRIANGLES, bf_info.firstSquareCount + bf_info.secondSquareCount + bf_info.thirdSquareCount + bf_info.shipMeshCount + bf_info.flameMesh1Count, g_flameMesh2.length / 3);
+}
+
+function setSpeed(){
+    let lower = 0.005
+    let upper = 0.01
+    speed1 = lower + Math.random() * (upper - lower)
+    speed2 = lower + Math.random() * (upper - lower)
+
+    
+    secondSquare.SPEED = speed2
+    thirdSquare.SPEED = speed1
 }
 
 function reset_moving_shapes() {
