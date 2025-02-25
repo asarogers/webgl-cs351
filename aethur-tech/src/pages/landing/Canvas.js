@@ -1,27 +1,41 @@
-import { useEffect, useRef } from "react";
+import { Box } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from 'three';
 
 const Canvas = () => {
   const canvasRef = useRef(null);
+  const [pageHeight, setPageHeight] = useState(window.innerHeight);
 
   useEffect(() => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    const camera = new THREE.PerspectiveCamera(125, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.z = 2;
-    
+
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       antialias: true
     });
-    
-    const setSize = () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
+
+    const updateSize = () => {
+      const totalHeight = document.body.scrollHeight; // Get full height of the page
+      setPageHeight(totalHeight);
+      renderer.setSize(window.innerWidth, totalHeight);
+      camera.aspect = window.innerWidth / totalHeight;
       camera.updateProjectionMatrix();
     };
-    setSize();
-    
+
+    updateSize();
+
+    window.addEventListener('resize', updateSize);
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
     // Create gradient shader material
     const createGlowLayer = (radius, opacity, x, y) => {
       const geometry = new THREE.CircleGeometry(radius, 64);
@@ -60,14 +74,14 @@ const Canvas = () => {
       mesh.position.y = y;
       return mesh;
     };
-    
+
     // Calculate opacity values
-    const division = 4/5;
+    const division = 4 / 5;
     const opacities = Array(8).fill(0).map((_, i) => {
       if (i === 0) return 0.025;
       return 0.15 * Math.pow(division, i);
     });
-    
+
     const layers = [
       { radius: 0.3, opacity: opacities[0] },
       { radius: 0.7, opacity: opacities[1] },
@@ -78,45 +92,29 @@ const Canvas = () => {
       { radius: 0.9, opacity: opacities[6] },
       { radius: 1.0, opacity: opacities[7] }
     ];
-    
+
     // Create two arrays to hold all the meshes
     const allLayers = [];
-    
+
     // Create and add all layers to the scene
     layers.forEach(({ radius, opacity }) => {
-      const layer1 = createGlowLayer(radius, opacity, -1.5, -1);
-      const layer2 = createGlowLayer(radius, opacity, 0, 1);
-      
+      const layer1 = createGlowLayer(radius, opacity, -1, 2.3);
+      const layer2 = createGlowLayer(radius, opacity, 1, 1.7);
+      const layer3 = createGlowLayer(radius, opacity, 0, 1);
+
       scene.add(layer1);
       scene.add(layer2);
-      
+      scene.add(layer3);
+
       // Store both layers for cleanup
-      allLayers.push(layer1, layer2);
+      allLayers.push(layer1, layer2, layer3);
+      // allLayers.push(layer1, layer2);
     });
-    
-    const handleResize = () => {
-      setSize();
-    };
-    
-    window.addEventListener('resize', handleResize);
-    
-    const animate = () => {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    };
-    
-    animate();
-    
+
+
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', updateSize);
       renderer.dispose();
-      
-      // Clean up all layers properly
-      allLayers.forEach(layer => {
-        scene.remove(layer);
-        if (layer.geometry) layer.geometry.dispose();
-        if (layer.material) layer.material.dispose();
-      });
     };
   }, []);
 
@@ -124,13 +122,13 @@ const Canvas = () => {
     <canvas
       ref={canvasRef}
       style={{
-        position: 'absolute',
+        position: 'absolute',  // Keep it absolute so elements scroll past it
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: `${pageHeight}px`,  // Make it match total page height
         display: 'block',
-        zIndex: 4
+        zIndex: 2
       }}
     />
   );

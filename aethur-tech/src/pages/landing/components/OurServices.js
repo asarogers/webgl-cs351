@@ -3,7 +3,7 @@ import { Box, Container, Typography, Grid, Paper, Button } from '@mui/material';
 
 const Services = () => {
   return (
-    <Box sx={{ backgroundColor: '#181818', color: 'white', padding: '4rem 0' }}>
+    <Box sx={{ color: 'white', padding: '4rem 0' }}>
       <Container maxWidth="lg">
         <Typography variant="h4" sx={{ textAlign: 'center', fontWeight: 'bold', color: '#ff9f00', marginBottom: '2rem' }}>
           Unlock The Future
