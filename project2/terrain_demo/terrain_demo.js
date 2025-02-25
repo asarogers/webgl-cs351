@@ -277,6 +277,7 @@ const movement = Object.freeze({
     RESET: "reset"
 });
 
+
 let firstSquare = new Square(generateSquareFromVertex(0.5));
 let secondSquare = new Square(generateSpaceship(0.5));
 let thirdSquare = new Square(generateSpaceship(0.5));
@@ -295,6 +296,21 @@ var initialZFirst = 0;
 var initialZSecond = 0;
 var initialZThird = 0;
 
+const spaceGenerator = new SpaceGenerator();
+
+// generate planets
+const rockyPlanet = spaceGenerator.generatePlanet([50, 10, -25], 3, "rocky");
+const icePlanet = spaceGenerator.generatePlanet([0, 0, 50], 2.5, "ice");  
+const gasPlanet = spaceGenerator.generatePlanet([-50, 5, -30], 6, "gas");  
+// Generate starfield (only stars)
+const stars = spaceGenerator.generateStarfield(1000, 100);
+const sun = spaceGenerator.generateSun([0, 0, -50], 10.0);
+
+
+const sunVertices = sun.generateSphere(150);
+rockyPlanet.generateSphere(50);
+gasPlanet.generateSphere(50);
+icePlanet.generateSphere(50);
 
 function main() {
     setupKeyBinds()
@@ -448,10 +464,7 @@ function initBuffers() {
         ...flame2.COLORS
     ];
 
-    const spaceGenerator = new SpaceGenerator();
     
-    // Generate starfield (only stars)
-    const stars = spaceGenerator.generateStarfield(1000, 100);
     
     // Combine all vertices and colors
     let allVertices = [];
@@ -464,24 +477,17 @@ function initBuffers() {
     }
 
     // Add Sun
-    const sun = spaceGenerator.generateSun([0, 0, -50], 10.0);
-    const sunVertices = sun.generateSphere(150);
     allVertices.push(...sunVertices);
     allColors.push(...sun.colors);
 
     // Add Planets
-    const rockyPlanet = spaceGenerator.generatePlanet([50, 10, -25], 3, "rocky");
-    rockyPlanet.generateSphere(50);
     allVertices.push(...rockyPlanet.vertices);
     allColors.push(...rockyPlanet.colors);
 
-    const gasPlanet = spaceGenerator.generatePlanet([-50, 5, -30], 6, "gas");  
-    gasPlanet.generateSphere(50);
+
     allVertices.push(...gasPlanet.vertices);
     allColors.push(...gasPlanet.colors);
 
-    const icePlanet = spaceGenerator.generatePlanet([0, 0, 50], 2.5, "ice");  
-    icePlanet.generateSphere(50);
     allVertices.push(...icePlanet.vertices);
     allColors.push(...icePlanet.colors);
 
@@ -1009,3 +1015,80 @@ function setupVec3(name, stride, offset) {
 
     return true
 }
+
+function randomizeScene() {
+    const bounds = 50;
+    
+    // Generate random positions for planets
+    const newRockyPosition = [Math.random() * bounds - bounds / 2, Math.random() * 20, Math.random() * bounds - bounds / 2];
+    const newGasPosition = [Math.random() * bounds - bounds / 2, Math.random() * 10, Math.random() * bounds - bounds / 2];
+    const newIcePosition = [Math.random() * bounds - bounds / 2, Math.random() * 15, Math.random() * bounds - bounds / 2];
+    
+    // Generate a new position for the Sun
+    const newSunPosition = [Math.random() * bounds - bounds / 2, Math.random() * 20, Math.random() * bounds - bounds / 2];
+
+    // Update planet positions
+    rockyPlanet.changeLocation(newRockyPosition);
+    rockyPlanet.generateSphere(50);
+
+    gasPlanet.changeLocation(newGasPosition);
+    gasPlanet.generateSphere(50);
+
+    icePlanet.changeLocation(newIcePosition);
+    icePlanet.generateSphere(50);
+
+    // Update Sun's position
+    sun.changeLocation(newSunPosition);
+    const sunVertices = sun.generateSphere(150);
+
+    // Update the vertex buffer
+    updateSpaceObjects(sunVertices);
+}
+
+
+function updateSpaceObjects(sunVertices) {
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_shipMesh,
+        ...flame1.VERTICES,
+        ...flame2.VERTICES
+    ];
+    
+    // Update the planet vertices in g_terrainMesh
+    g_terrainMesh = []; // Clear terrain mesh
+    
+    // Add stars (assuming they don't change position)
+    for (const star of stars) {
+        g_terrainMesh.push(...star.position);
+    }
+
+    // Add updated Sun and planets
+    g_terrainMesh.push(...sunVertices);
+    g_terrainMesh.push(...rockyPlanet.vertices);
+    g_terrainMesh.push(...gasPlanet.vertices);
+    g_terrainMesh.push(...icePlanet.vertices);
+
+    // Combine all data
+    vertices = [...vertices, ...g_terrainMesh];
+
+    let colors = [
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS,
+        ...allColors
+    ];
+
+    // Update the buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
+}
+
+
+
+
+

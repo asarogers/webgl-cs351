@@ -115,11 +115,15 @@ class CelestialBody {
     constructor(type, radius, position, color) {
         this.type = type;
         this.radius = radius;
-        this.position = position;
+        this.POSITIONS = position;
         this.color = color;
         this.vertices = [];
         this.colors = [];
         this.noise = new Noise(Date.now());
+    }
+
+    changeLocation(position){
+        this.POSITIONS = position;
     }
 
     generateSphere(detail = 20) {
@@ -151,9 +155,9 @@ class CelestialBody {
                 const z = sinPhi * sinTheta;
     
                 this.vertices.push(
-                    this.position[0] + x * radius,
-                    this.position[1] + y * radius,
-                    this.position[2] + z * radius
+                    this.POSITIONS[0] + x * radius,
+                    this.POSITIONS[1] + y * radius,
+                    this.POSITIONS[2] + z * radius
                 );
             }
         }
@@ -206,6 +210,15 @@ class CelestialBody {
 class SpaceGenerator {
     constructor() {
         this.noise = new Noise(Date.now());
+        this.positions = {
+            'rocky': null,
+            'gas': null,
+            'ice': null
+        }
+    }
+
+    changePlanetLocation(planet, location){
+        this.positions[planet] = location
     }
 
     // Rest of the SpaceGenerator class remains the same
@@ -235,6 +248,7 @@ class SpaceGenerator {
         let baseColor;
         let noiseScale;
         let colorVariation;
+        this.positions[type] = position
 
         switch (type) {
             case 'rocky':
@@ -258,7 +272,7 @@ class SpaceGenerator {
                 colorVariation = 0.2;
         }
 
-        return new CelestialBody('planet', radius, position, baseColor);
+        return new CelestialBody('planet', radius, this.positions[type], baseColor);
     }
 
     generateSun(position, radius) {
