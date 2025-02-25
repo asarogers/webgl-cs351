@@ -553,10 +553,12 @@ let animationFrameId = null;
 
 function tick() {
     if (isPaused) {
+        updateCameraPosition(16); // Assume a fixed frame time (16ms) for smooth movement
         draw();
         animationFrameId = requestAnimationFrame(tick, g_canvas);
         return;
     }
+    
 
     g_rotationAxis = [1, 0, 0];
     mesh_rotation = [0, 1, 0];
