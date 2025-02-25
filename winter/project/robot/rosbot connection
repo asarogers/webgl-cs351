@@ -75,7 +75,11 @@ send data from rosbot to laptop
 	docker compose up -d microros astra astra
 - laptop
 	rviz2 & select the topic you want to see
+		/camera/color/image_raw
+-----------------------------------------------------------------------------
 
+docker compose -f compose.tamir.yaml up -d microros astra astra
+docker compose -f compose.tamir.yaml down microros astra
 
 
 
