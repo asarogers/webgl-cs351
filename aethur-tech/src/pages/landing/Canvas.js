@@ -7,26 +7,24 @@ const Canvas = () => {
   useEffect(() => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.z = 2;
-
+    
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       antialias: true
     });
-
+    
     const setSize = () => {
       renderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
     };
     setSize();
-
+    
     // Create gradient shader material
-    const createGlowLayer = (radius, opacity) => {
+    const createGlowLayer = (radius, opacity, x, y) => {
       const geometry = new THREE.CircleGeometry(radius, 64);
-      
       // Define shader materials
       const vertexShader = `
         varying vec2 vUv;
@@ -35,26 +33,20 @@ const Canvas = () => {
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `;
-
       const fragmentShader = `
         varying vec2 vUv;
         uniform float opacity;
-        
         void main() {
           vec3 color1 = vec3(1.0, 0.67, 0.0); // Warmer yellow #ffaa00
-          vec3 color2 = vec3(0.8, 0.5, 0.0);  // Darker orange
-          
+          vec3 color2 = vec3(0.8, 0.5, 0.0); // Darker orange
           // Create gradient based on y position
           vec3 finalColor = mix(color1, color2, vUv.y);
-          
           // Add radial falloff
           float dist = length(vUv - vec2(0.5));
           float alpha = opacity * (1.0 - smoothstep(0.0, 0.5, dist));
-          
           gl_FragColor = vec4(finalColor, alpha);
         }
       `;
-
       const material = new THREE.ShaderMaterial({
         vertexShader,
         fragmentShader,
@@ -64,20 +56,18 @@ const Canvas = () => {
         }
       });
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.x = -1.5;
-      mesh.position.y = -1;
-
-
+      mesh.position.x = x;
+      mesh.position.y = y;
       return mesh;
     };
-
+    
     // Calculate opacity values
     const division = 4/5;
     const opacities = Array(8).fill(0).map((_, i) => {
       if (i === 0) return 0.025;
       return 0.15 * Math.pow(division, i);
     });
-
+    
     const layers = [
       { radius: 0.3, opacity: opacities[0] },
       { radius: 0.7, opacity: opacities[1] },
@@ -88,47 +78,61 @@ const Canvas = () => {
       { radius: 0.9, opacity: opacities[6] },
       { radius: 1.0, opacity: opacities[7] }
     ];
-
-    const glowLayers = layers.map(({ radius, opacity }) => {
-      const layer = createGlowLayer(radius, opacity);
-      scene.add(layer);
-      return layer;
+    
+    // Create two arrays to hold all the meshes
+    const allLayers = [];
+    
+    // Create and add all layers to the scene
+    layers.forEach(({ radius, opacity }) => {
+      const layer1 = createGlowLayer(radius, opacity, -1.5, -1);
+      const layer2 = createGlowLayer(radius, opacity, 0, 1);
+      
+      scene.add(layer1);
+      scene.add(layer2);
+      
+      // Store both layers for cleanup
+      allLayers.push(layer1, layer2);
     });
-
+    
     const handleResize = () => {
       setSize();
     };
+    
     window.addEventListener('resize', handleResize);
-
+    
     const animate = () => {
       requestAnimationFrame(animate);
       renderer.render(scene, camera);
     };
+    
     animate();
-
+    
     return () => {
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
-      glowLayers.forEach(layer => {
-        layer.geometry.dispose();
-        layer.material.dispose();
+      
+      // Clean up all layers properly
+      allLayers.forEach(layer => {
+        scene.remove(layer);
+        if (layer.geometry) layer.geometry.dispose();
+        if (layer.material) layer.material.dispose();
       });
     };
   }, []);
 
   return (
     <canvas
-    ref={canvasRef}
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      display: 'block',
-      zIndex: 2
-    }}
-  />
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        display: 'block',
+        zIndex: 4
+      }}
+    />
   );
 };
 
