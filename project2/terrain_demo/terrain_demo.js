@@ -526,8 +526,6 @@ function initBuffers() {
             depth: 200
         },
         colorOffset: vertices.length * FLOAT_SIZE,
-        g_terrainMesh: g_terrainMesh,
-        terrainMeshCount: g_terrainMesh.length / 3,
         firstSquareCount: firstSquare.VERTEX_COUNT,
         secondSquareCount: secondSquare.VERTEX_COUNT,
         thirdSquareCount: thirdSquare.VERTEX_COUNT,
@@ -538,6 +536,87 @@ function initBuffers() {
     };
 }
 
+function randomizeScene() {
+    const bounds = 50;
+    
+    // Generate random positions for planets
+    const newRockyPosition = [Math.random() * bounds - bounds / 2, Math.random() * 20, Math.random() * bounds - bounds / 2];
+    const newGasPosition = [Math.random() * bounds - bounds / 2, Math.random() * 10, Math.random() * bounds - bounds / 2];
+    const newIcePosition = [Math.random() * bounds - bounds / 2, Math.random() * 15, Math.random() * bounds - bounds / 2];
+    
+    // Generate a new position for the Sun
+    const newSunPosition = [Math.random() * bounds - bounds / 2, Math.random() * 20, Math.random() * bounds - bounds / 2];
+
+    // Update planet positions
+    rockyPlanet.changeLocation(newRockyPosition);
+    rockyPlanet.generateSphere(50);
+
+    gasPlanet.changeLocation(newGasPosition);
+    gasPlanet.generateSphere(50);
+
+    icePlanet.changeLocation(newIcePosition);
+    icePlanet.generateSphere(50);
+
+    // Update Sun's position
+    sun.changeLocation(newSunPosition);
+    const sunVertices = sun.generateSphere(150);
+
+    // Update the vertex buffer
+    updateSpaceObjects(sunVertices);
+}
+
+
+function updateSpaceObjects(sunVertices) {
+    let vertices = [
+        ...firstSquare.VERTICES,
+        ...secondSquare.VERTICES,
+        ...thirdSquare.VERTICES,
+        ...g_shipMesh,
+        ...flame1.VERTICES,
+        ...flame2.VERTICES
+    ];
+    
+    // Clear previous terrain and color buffers
+    g_terrainMesh = []; 
+    allColors = []; 
+    
+    // Add stars (assuming they don't change position)
+    for (const star of stars) {
+        g_terrainMesh.push(...star.position);
+        allColors.push(...star.color);
+    }
+
+    // **Add new Sun and planets with updated sizes**
+    g_terrainMesh.push(...sunVertices);
+    allColors.push(...sun.colors);
+
+    g_terrainMesh.push(...rockyPlanet.vertices);
+    allColors.push(...rockyPlanet.colors);
+
+    g_terrainMesh.push(...gasPlanet.vertices);
+    allColors.push(...gasPlanet.colors);
+
+    g_terrainMesh.push(...icePlanet.vertices);
+    allColors.push(...icePlanet.colors);
+
+    // **Update vertex buffer**
+    vertices = [...vertices, ...g_terrainMesh];
+
+    let colors = [
+        ...firstSquare.COLORS,
+        ...secondSquare.COLORS,
+        ...thirdSquare.COLORS,
+        ...shipMesh.COLORS,
+        ...flame1.COLORS,
+        ...flame2.COLORS,
+        ...allColors
+    ];
+
+    // Re-upload data to GPU
+    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
+}
+
 
 
 // tick constants
@@ -545,19 +624,55 @@ const ROTATION_SPEED = .05
 const CAMERA_SPEED = .01
 const CAMERA_ROT_SPEED = .1
 
-// function to apply all the logic for a single frame tick
-// Add this variable at the top with other global variables
 let animationFrameId = null;
 var g_lookAtPoint = [0, 0, 0]
 
 // Camera state
-var g_cameraPosition = new Vector3([0, 1, 5]); // Start at some initial position
-var g_cameraFront = new Vector3([0, 0, -1]); // Default facing direction
-var g_cameraUp = new Vector3([0, 1, 0]); // Up direction
-var g_cameraSpeed = 0.02; // Adjust speed as needed
+var g_cameraPosition = new Vector3([0, 1, 5]);
+var g_cameraFront = new Vector3([0, 0, -1]);
+var g_cameraUp = new Vector3([0, 1, 0]); 
+var g_cameraSpeed = 0.02;
 
 var yaw = -90.0; 
 var pitch = 0.0;
+var g_followShip = false; 
+
+function setFollow(){
+    g_followShip = !g_followShip;
+}
+
+function followShip() {
+    if (!g_followShip) return;  // Exit if follow mode is OFF
+
+    // Extract ship's position from its model matrix
+    let shipX = g_ship_modelMatrix.elements[12];
+    let shipY = g_ship_modelMatrix.elements[13];
+    let shipZ = g_ship_modelMatrix.elements[14];
+
+    // Extract the ship's forward direction (Z-axis of model matrix)
+    let forwardX = -g_ship_modelMatrix.elements[8]; 
+    let forwardY = -g_ship_modelMatrix.elements[9];
+    let forwardZ = -g_ship_modelMatrix.elements[10];
+
+    // Set a fixed distance behind the ship
+    let distanceBehind = 5.0;  
+    let heightOffset = 2.0;   
+
+
+    g_cameraPosition = new Vector3([
+        shipX + forwardX * distanceBehind,
+        shipY + heightOffset,
+        shipZ + forwardZ * distanceBehind
+    ]);
+
+    // Update the camera front vector to look at the ship
+    g_cameraFront = new Vector3([
+        shipX - g_cameraPosition.elements[0],
+        shipY - g_cameraPosition.elements[1],
+        shipZ - g_cameraPosition.elements[2]
+    ]);
+    g_cameraFront.normalize();
+}
 
 function tick() {
     if (isPaused) {
@@ -610,6 +725,8 @@ function tick() {
     } else {
         flickerFlame(deltaTime);
     }
+
+    followShip();
 
     updateCameraPosition(deltaTime);
     draw();
@@ -922,7 +1039,7 @@ function draw() {
 
     // Draw terrain with identity model matrix
     gl.uniformMatrix4fv(g_u_model_ref, false, g_terrainModelMatrix.elements)
-    gl.drawArrays(gl.POINTS, bf_info.totalCount, bf_info.terrainMeshCount)
+    gl.drawArrays(gl.POINTS, bf_info.totalCount, g_terrainMesh.length / 3)
 
     // Draw each object with its own model matrix
     // First square
@@ -1024,18 +1141,6 @@ function moveShip(move, distance){
     g_flame_modelMatrix2 = move3DShape(g_flame_modelMatrix2, move, distance)
 }
 
-// function togglePause() {
-//     isPaused = !isPaused; // Toggle the pause state
-
-//     // Update the button text
-//     const pauseButton = document.getElementById("pauseButton");
-//     if (isPaused) {
-//         pauseButton.textContent = "Resume";
-//     } else {
-//         pauseButton.textContent = "Pause";
-//     }
-// }
-
 
 /*
  * Helper function to update the camera position each frame
@@ -1104,77 +1209,7 @@ function setupVec3(name, stride, offset) {
     return true
 }
 
-function randomizeScene() {
-    const bounds = 50;
-    
-    // Generate random positions for planets
-    const newRockyPosition = [Math.random() * bounds - bounds / 2, Math.random() * 20, Math.random() * bounds - bounds / 2];
-    const newGasPosition = [Math.random() * bounds - bounds / 2, Math.random() * 10, Math.random() * bounds - bounds / 2];
-    const newIcePosition = [Math.random() * bounds - bounds / 2, Math.random() * 15, Math.random() * bounds - bounds / 2];
-    
-    // Generate a new position for the Sun
-    const newSunPosition = [Math.random() * bounds - bounds / 2, Math.random() * 20, Math.random() * bounds - bounds / 2];
 
-    // Update planet positions
-    rockyPlanet.changeLocation(newRockyPosition);
-    rockyPlanet.generateSphere(50);
-
-    gasPlanet.changeLocation(newGasPosition);
-    gasPlanet.generateSphere(50);
-
-    icePlanet.changeLocation(newIcePosition);
-    icePlanet.generateSphere(50);
-
-    // Update Sun's position
-    sun.changeLocation(newSunPosition);
-    const sunVertices = sun.generateSphere(150);
-
-    // Update the vertex buffer
-    updateSpaceObjects(sunVertices);
-}
-
-
-function updateSpaceObjects(sunVertices) {
-    let vertices = [
-        ...firstSquare.VERTICES,
-        ...secondSquare.VERTICES,
-        ...thirdSquare.VERTICES,
-        ...g_shipMesh,
-        ...flame1.VERTICES,
-        ...flame2.VERTICES
-    ];
-    
-    // Update the planet vertices in g_terrainMesh
-    g_terrainMesh = []; // Clear terrain mesh
-    
-    // Add stars (assuming they don't change position)
-    for (const star of stars) {
-        g_terrainMesh.push(...star.position);
-    }
-
-    // Add updated Sun and planets
-    g_terrainMesh.push(...sunVertices);
-    g_terrainMesh.push(...rockyPlanet.vertices);
-    g_terrainMesh.push(...gasPlanet.vertices);
-    g_terrainMesh.push(...icePlanet.vertices);
-
-    // Combine all data
-    vertices = [...vertices, ...g_terrainMesh];
-
-    let colors = [
-        ...firstSquare.COLORS,
-        ...secondSquare.COLORS,
-        ...thirdSquare.COLORS,
-        ...shipMesh.COLORS,
-        ...flame1.COLORS,
-        ...flame2.COLORS,
-        ...allColors
-    ];
-
-    // Update the buffer
-    gl.bindBuffer(gl.ARRAY_BUFFER, bf_info.buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...vertices, ...colors]), gl.STATIC_DRAW);
-}
 
 
 
