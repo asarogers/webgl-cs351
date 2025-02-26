@@ -548,8 +548,16 @@ const CAMERA_ROT_SPEED = .1
 // function to apply all the logic for a single frame tick
 // Add this variable at the top with other global variables
 let animationFrameId = null;
+var g_lookAtPoint = [0, 0, 0]
 
+// Camera state
+var g_cameraPosition = new Vector3([0, 1, 5]); // Start at some initial position
+var g_cameraFront = new Vector3([0, 0, -1]); // Default facing direction
+var g_cameraUp = new Vector3([0, 1, 0]); // Up direction
+var g_cameraSpeed = 0.02; // Adjust speed as needed
 
+var yaw = -90.0; 
+var pitch = 0.0;
 
 function tick() {
     if (isPaused) {
@@ -606,6 +614,183 @@ function tick() {
     updateCameraPosition(deltaTime);
     draw();
     animationFrameId = requestAnimationFrame(tick, g_canvas);
+}
+
+function updateCameraPosition(deltaTime) {
+    let speed = g_cameraSpeed * deltaTime;
+
+    let forward = normalizeVector(g_cameraFront);
+    let right = normalizeVector(crossProduct(forward, g_cameraUp));
+
+    if (g_movingForward) {
+        g_cameraPosition = addVectors(g_cameraPosition, multiplyScalar(forward, speed));
+    }
+    if (g_movingBackward) {
+        g_cameraPosition = subtractVectors(g_cameraPosition, multiplyScalar(forward, speed));
+    }
+    if (g_movingUp) {
+        g_cameraPosition = addVectors(g_cameraPosition, multiplyScalar(g_cameraUp, speed));
+    }
+    if (g_movingDown) {
+        g_cameraPosition = subtractVectors(g_cameraPosition, multiplyScalar(g_cameraUp, speed));
+    }
+
+    // if (g_movingLeft) {
+    //     g_cameraAngle += CAMERA_ROT_SPEED * deltaTime
+    // }
+    // if (g_movingRight) {
+    //     g_cameraAngle -= CAMERA_ROT_SPEED * deltaTime
+    // }
+
+    
+    if (g_movingLeft) {
+        yaw += CAMERA_ROT_SPEED * deltaTime
+        updateCameraDirection();
+        // g_cameraPosition = subtractVectors(g_cameraPosition, multiplyScalar(right, speed));
+    }
+    if (g_movingRight) {
+        yaw -= CAMERA_ROT_SPEED * deltaTime
+        updateCameraDirection();
+        // g_cameraPosition = addVectors(g_cameraPosition, multiplyScalar(right, speed));
+    }
+    
+}
+
+
+function normalizeVector(vector) {
+    let length = Math.sqrt(
+        vector.elements[0] * vector.elements[0] +
+        vector.elements[1] * vector.elements[1] +
+        vector.elements[2] * vector.elements[2]
+    );
+    if (length === 0) return new Vector3([0, 0, 0]); // Prevent division by zero
+    return new Vector3([
+        vector.elements[0] / length,
+        vector.elements[1] / length,
+        vector.elements[2] / length
+    ]);
+}
+
+
+function addVectors(v1, v2) {
+    return new Vector3([
+        v1.elements[0] + v2.elements[0],
+        v1.elements[1] + v2.elements[1],
+        v1.elements[2] + v2.elements[2]
+    ]);
+}
+
+function subtractVectors(v1, v2) {
+    return new Vector3([
+        v1.elements[0] - v2.elements[0],
+        v1.elements[1] - v2.elements[1],
+        v1.elements[2] - v2.elements[2]
+    ]);
+}
+
+
+
+function multiplyScalar(vector, scalar) {
+    return new Vector3([
+        vector.elements[0] * scalar,
+        vector.elements[1] * scalar,
+        vector.elements[2] * scalar
+    ]);
+}
+
+
+function crossProduct(a, b) {
+    return new Vector3([
+        a.elements[1] * b.elements[2] - a.elements[2] * b.elements[1],
+        a.elements[2] * b.elements[0] - a.elements[0] * b.elements[2],
+        a.elements[0] * b.elements[1] - a.elements[1] * b.elements[0]
+    ]);
+}
+
+
+/*
+ * Helper function to calculate camera position from the properties we update
+ * Taken from the lecture 16 demos
+ */
+function calculateCameraPosition() {
+    let lookAt = new Vector3([
+        g_cameraPosition.elements[0] + g_cameraFront.elements[0],
+        g_cameraPosition.elements[1] + g_cameraFront.elements[1],
+        g_cameraPosition.elements[2] + g_cameraFront.elements[2],
+    ]);
+    
+
+    return new Matrix4().setLookAt(
+        g_cameraPosition.elements[0], g_cameraPosition.elements[1], g_cameraPosition.elements[2],
+        lookAt.elements[0], lookAt.elements[1], lookAt.elements[2],
+        g_cameraUp.elements[0], g_cameraUp.elements[1], g_cameraUp.elements[2]
+    );
+}
+
+function updateCameraDirection() {
+    let front = new Vector3([
+        Math.cos(degToRad(yaw)),  // X component (left/right movement)
+        0,                        // Y component (ignore pitch for now)
+        Math.sin(degToRad(yaw))   // Z component (forward/backward movement)
+    ]);
+    
+    front.normalize();
+    g_cameraFront = front;
+}
+
+function degToRad(degrees) {
+    return degrees * (Math.PI / 180);
+}
+
+
+/*
+ * Helper function to setup camera movement key binding logic
+ * Taken from lecture 16 demos
+ */
+function setupKeyBinds() {
+    // Start movement when the key starts being pressed
+    document.addEventListener('keydown', function(event) {
+        if (event.key == 'r') {
+			g_movingUp = true
+		}
+        else if (event.key == 'f') {
+			g_movingDown = true
+		}
+        else if (event.key == 'd') {
+			g_movingLeft = true
+		}
+        else if (event.key == 'a') {
+			g_movingRight = true
+		}
+		else if (event.key == 'w') {
+			g_movingForward = true
+		}
+		else if (event.key == 's') {
+			g_movingBackward = true
+		}
+	})
+
+    // End movement on key release
+    document.addEventListener('keyup', function(event) {
+        if (event.key == 'r') {
+			g_movingUp = false
+		}
+        else if (event.key == 'f') {
+			g_movingDown = false
+		}
+        else if (event.key == 'd') {
+			g_movingLeft = false
+		}
+        else if (event.key == 'a') {
+			g_movingRight = false
+		}
+		else if (event.key == 'w') {
+			g_movingForward = false
+		}
+		else if (event.key == 's') {
+			g_movingBackward = false
+		}
+	})
 }
 
 
@@ -855,106 +1040,7 @@ function moveShip(move, distance){
 /*
  * Helper function to update the camera position each frame
  */
-function updateCameraPosition(deltaTime) {
-    // move the camera based on user input
-    if (g_movingUp) {
-        g_cameraHeight += CAMERA_SPEED * deltaTime
-    }
-    if (g_movingDown) {
-        g_cameraHeight -= CAMERA_SPEED * deltaTime
-    }
-    if (g_movingLeft) {
-        g_cameraAngle += CAMERA_ROT_SPEED * deltaTime
-    }
-    if (g_movingRight) {
-        g_cameraAngle -= CAMERA_ROT_SPEED * deltaTime
-    }
-    if (g_movingForward) {
-        // note that moving "forward" means "towards the teapot"
-        g_cameraDistance -= CAMERA_SPEED * deltaTime
-        // we don't want to hit a distance of 0
-        g_cameraDistance = Math.max(g_cameraDistance, 1.0)
-    }
-    if (g_movingBackward) {
-        g_cameraDistance += CAMERA_SPEED * deltaTime
-    }
-}
 
-/*
- * Helper function to calculate camera position from the properties we update
- * Taken from the lecture 16 demos
- */
-function calculateCameraPosition() {
-    // Calculate the camera position from our angle and height
-    // we get to use a bit of clever 2D rotation math
-    // note that we can only do this because we're "fixing" our plane of motion
-    // if we wanted to allow arbitrary rotation, we would want quaternions!
-    var cameraPosition = new Vector3()
-    cameraPosition.x = Math.cos(Math.PI * g_cameraAngle / 180)
-    cameraPosition.y = g_cameraHeight
-    cameraPosition.z = Math.sin(Math.PI * g_cameraAngle / 180)
-    cameraPosition.normalize()
-    
-    // calculate distance and turn into an array for matrix entry
-    var cameraPositionArray = [
-        cameraPosition.x * g_cameraDistance,
-        cameraPosition.y * g_cameraDistance,
-        cameraPosition.z * g_cameraDistance
-    ]
-
-    // Build a new lookat matrix each frame
-    return new Matrix4().setLookAt(...cameraPositionArray, 0, cameraPositionArray[1], 0, 0, 1, 0)
-}
-
-/*
- * Helper function to setup camera movement key binding logic
- * Taken from lecture 16 demos
- */
-function setupKeyBinds() {
-    // Start movement when the key starts being pressed
-    document.addEventListener('keydown', function(event) {
-        if (event.key == 'r') {
-			g_movingUp = true
-		}
-        else if (event.key == 'f') {
-			g_movingDown = true
-		}
-        else if (event.key == 'd') {
-			g_movingLeft = true
-		}
-        else if (event.key == 'a') {
-			g_movingRight = true
-		}
-		else if (event.key == 'w') {
-			g_movingForward = true
-		}
-		else if (event.key == 's') {
-			g_movingBackward = true
-		}
-	})
-
-    // End movement on key release
-    document.addEventListener('keyup', function(event) {
-        if (event.key == 'r') {
-			g_movingUp = false
-		}
-        else if (event.key == 'f') {
-			g_movingDown = false
-		}
-        else if (event.key == 'd') {
-			g_movingLeft = false
-		}
-        else if (event.key == 'a') {
-			g_movingRight = false
-		}
-		else if (event.key == 'w') {
-			g_movingForward = false
-		}
-		else if (event.key == 's') {
-			g_movingBackward = false
-		}
-	})
-}
 
 /*
  * Helper to construct _basic_ per-vertex terrain colors

@@ -1,0 +1,47 @@
+<!-- Last edited by Dietrich Geisler 2025 -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<header>
+    <!-- Sets an icon for the page -->
+    <link rel="icon" type="image/x-icon" href="/resources/favicon.ico">
+</header>
+
+<body onload="main()">
+    <!-- WebGL Utility Scripts -->
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-quat03.js"></script>
+
+    <!-- Select a JavaScript file -->
+    <script src="perspective_camera.js"></script>
+
+    <!-- Setup the Canvas -->
+    <canvas id="canvas" width="400" height="400">
+        Please use a browser that supports "canvas"
+    </canvas>
+
+    <!-- Add camera controls -->
+    <div>
+        <input type="range" id="sliderFOVY" min="1" max="360" step=".01" value="90" />
+        <label id="fovy" for="sliderFOVY"></label>
+    </div>
+    <div>
+        <input type="range" id="sliderAspect" min=".5" max="2" step=".01" value="1" />
+        <label id="aspect" for="sliderAspect"></label>
+    </div>
+    <div>
+        <input type="range" id="sliderNear" min="-1" max="5" step=".01" value="1" />
+        <label id="near" for="sliderNear"></label>
+    </div>
+    <div>
+        <input type="range" id="sliderFar" min="-1" max="5" step=".01" value="2" />
+        <label id="far" for="sliderFar"></label>
+    </div>
+
+
+</body>
+
+</html>
