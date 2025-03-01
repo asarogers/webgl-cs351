@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
-import HeroSection from "./components/HeroSection";
+import HeroSection from "./sections/HeroSection";
 import { AppBar, Toolbar, Typography, Box, Button, Grid, Container } from "@mui/material";
 import Navbar from "../../components/Navbar";
-import AboutUs from "./components/AboutUs";
-import Services from "./components/OurServices";
-import Testimonials from "./components/Testimonials";
-import Projects from "./components/Projects";
-import BlogSection from "./components/Blogs";
+import AboutUs from "./sections/AboutUs";
+import Services from "./sections/OurServices";
+import Testimonials from "./sections/Testimonials";
+import Projects from "./sections/Projects";
+import BlogSection from "./sections/Blogs";
 
 // Import the function that sets up the Three.js scene
 import Canvas  from "./Canvas";

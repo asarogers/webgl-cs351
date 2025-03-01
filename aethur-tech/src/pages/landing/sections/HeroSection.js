@@ -3,7 +3,7 @@ import { AppBar, Toolbar, Typography, Box, Button, Grid, Container } from "@mui/
 import backgroundImage from "../img/background1.png"; // Import background image
 import campusConnex from "../../../images/campusConnex.png"; //campusConnex.png
 import commercial from "../../../images/commercial.mp4"
-import CustomLabel from "../components/CustomLabel"
+import CustomLabel from "../../../components/CustomLabel"
 
 export default function HeroSection() {
     return (
@@ -43,7 +43,7 @@ export default function HeroSection() {
                 }}
             >
                 <Box>
-                <CustomLabel label = "Aether Tech"> </CustomLabel>
+                <CustomLabel label = "AETHER TECH"> </CustomLabel>
                     <Typography
                         variant="h3"
                         sx={{

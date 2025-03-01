@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Container, Typography, Grid, Paper } from '@mui/material';
 import { Code } from '@mui/icons-material';
 import aboutUsImage from "../img/aboutUs.png"
-import CustomLabel from "./CustomLabel"
+import CustomLabel from "../../../components/CustomLabel"
 const AboutUs = () => {
   return (
     <Box sx={{ color: 'white', padding: '4rem 0' }}>

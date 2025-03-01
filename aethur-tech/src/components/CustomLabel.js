@@ -5,13 +5,17 @@ export default function CustomLabel({label}){
         <Typography
             variant="overline"
             sx={{
+                background: "linear-gradient(to top, #FF861D,rgb(255, 119, 0), #FBDF02, #FBDF02)",
+                WebkitBackgroundClip: "text",
                 borderRadius: "25px",
                 border: "1px solid rgba(255, 255, 255, 1)",
-                padding: "0px 4px 0px 4px",
-                color: "#FFC107",
+                backgroundClip: "text", // Standard
+                color: "transparent",
+                padding: "0px 6px 0px 6px",
+                margin: "0px",
                 fontWeight: "bold",
-                textTransform: "uppercase",
-                fontSize: "clamp(0.75rem, 1.75vw, 1.75rem)",
+                textTransform: "none",
+                fontSize: "clamp(0.55rem, 1.45vw, 1.35rem)",
                 display: "inline-block",
             }}
         >
