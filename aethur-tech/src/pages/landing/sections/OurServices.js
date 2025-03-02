@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Container, Typography, Grid, Paper, Button, SvgIcon } from '@mui/material';
+import { Box, Container, Typography, Grid, Paper, Button } from '@mui/material';
 import CustomLabel from "../../../components/CustomLabel";
 import penPhone from "../img/PenPhone.svg"
+import codePhone from "../img/codePhone.svg"
+import phone from "../img/phone.svg"
+import laptop from "../img/laptop.svg"
+
+
 const Services = () => {
   const texts = [
     "We build custom mobile apps for Android, iOS, and cross-platform.",
@@ -9,9 +14,10 @@ const Services = () => {
     "Connecting the physical and digital worlds through seamless IoT solutions.",
     "Creating apps that work seamlessly across multiple platforms with one codebase."
   ];
+  const imgs = [penPhone, codePhone, phone, laptop]
 
   return (
-    <Box sx={{ color: 'white', padding: '4rem 0' }}>
+    <Box sx={{ color: 'white', padding: '0rem 0' }}>
       <Container maxWidth="lg">
         <Typography variant="h4" sx={{ textAlign: 'center', fontWeight: 'bold', color: '#ff9f00', marginBottom: '2rem' }}>
           <CustomLabel label="Unlock The Future" />
@@ -27,7 +33,7 @@ const Services = () => {
 
         <Grid container spacing={4} justifyContent="center">
           {["Mobile App Design & Development", "Advanced Development", "IoT Development", "Cross-Platform Development"].map((title, index) => (
-            <ServiceCard key={index} title={title} text={texts[index]} />
+            <ServiceCard key={index} title={title} text={texts[index]} imgs={imgs[index]} />
           ))}
         </Grid>
       </Container>
@@ -35,7 +41,7 @@ const Services = () => {
   );
 };
 
-const ServiceCard = ({ title, text }) => {
+const ServiceCard = ({ title, text, imgs }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -63,7 +69,6 @@ const ServiceCard = ({ title, text }) => {
       >
         <Paper
           sx={{
-            height: "100%",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
@@ -100,14 +105,14 @@ const ServiceCard = ({ title, text }) => {
               alignItems: "bottom",
               justifyContent: "center",
               borderRadius: "50%",
-              background: isHovered ? "black" : "transparent", // Black background on hover
+              background: isHovered ? "black" : "rgba(117, 117, 109, 0.5)", // Black background on hover
               transition: "all 0.5s ease-in-out",
             }}
           >
 
             <defs>
               <img
-                src={penPhone}
+                src={imgs}
                 alt="App Development Icon"
                 style={{
                   width: "50px",
@@ -115,16 +120,8 @@ const ServiceCard = ({ title, text }) => {
                   filter: isHovered ? "invert(38%) sepia(100%) saturate(100%) hue-rotate(1deg) brightness(100%) contrast(105%)" : ""
                 }}
               />
-
             </defs>
           </Box>
-
-
-
-
-
-
-          {/* Title */}
           <Typography variant="h6"
             sx={{
               color: isHovered ? "black" : "white",

@@ -1,110 +1,106 @@
-import React from 'react';
-import { Box, Container, Grid, Typography, Link, TextField, Button, IconButton } from '@mui/material';
-import { Facebook, Twitter, Instagram, LinkedIn, YouTube } from '@mui/icons-material';
+import React from "react";
+import { Box, Container, Grid, Typography, Link, IconButton } from "@mui/material";
+import { Facebook, Twitter, Instagram, LinkedIn, YouTube } from "@mui/icons-material";
+import logo from "../images/Final Logo/rect1.png";
+import backgroundImage from "../images/Footer.png";
 
 const Footer = () => {
   return (
-    <Box sx={{ backgroundColor: '#181818', color: 'white', padding: '2rem 0' }}>
+    <Box
+      sx={{
+        position: "relative",
+        backgroundColor: "#0a0a0a",
+        color: "#fff",
+        padding: "3rem 0",
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <Container maxWidth="lg">
-        <Grid container spacing={4} justifyContent="space-between">
-          {/* Left Section */}
+        <Grid container spacing={4} justifyContent="space-between" alignItems="start">
+          {/* Left Section: Logo & Description */}
           <Grid item xs={12} md={4}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '1rem' }}>
-              Aethur Tech
+            <Box>
+              <img
+                src={logo}
+                alt="Aethur Tech Logo"
+                style={{
+                  width: "clamp(100px, 15vw, 175px)",
+                  marginBottom: "10px",
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ maxWidth: "280px", marginBottom: "1rem", color: "#ccc" }}>
+              We create tailored mobile apps that turn your ideas into innovative solutions for growth.
             </Typography>
-            <Typography variant="body2" sx={{ marginBottom: '1rem' }}>
-              We create advanced mobile apps to turn your ideas into innovative solutions for growth.
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item>
-                <IconButton sx={{ color: 'white' }}><Facebook /></IconButton>
-              </Grid>
-              <Grid item>
-                <IconButton sx={{ color: 'white' }}><Twitter /></IconButton>
-              </Grid>
-              <Grid item>
-                <IconButton sx={{ color: 'white' }}><Instagram /></IconButton>
-              </Grid>
-              <Grid item>
-                <IconButton sx={{ color: 'white' }}><LinkedIn /></IconButton>
-              </Grid>
-              <Grid item>
-                <IconButton sx={{ color: 'white' }}><YouTube /></IconButton>
-              </Grid>
-            </Grid>
+            {/* Social Icons */}
+            <Box display="flex" gap={1}>
+              <IconButton sx={{ color: "#ff9f00", background: "white"}}>
+                <Facebook />
+              </IconButton>
+              <IconButton sx={{ color: "#ff9f00", background: "white" }}>
+                <Twitter />
+              </IconButton>
+              <IconButton sx={{ color: "#ff9f00", background: "white" }}>
+                <Instagram />
+              </IconButton>
+              <IconButton sx={{ color: "#ff9f00", background: "white" }}>
+                <LinkedIn />
+              </IconButton>
+              <IconButton sx={{ color: "#ff9f00", background: "white" }}>
+                <YouTube />
+              </IconButton>
+            </Box>
           </Grid>
 
-          {/* Middle Section */}
+          {/* Middle Section: Quick Links */}
           <Grid item xs={12} md={4}>
-            <Typography variant="body1" sx={{ fontWeight: 'bold', marginBottom: '1rem' }}>
+            <Typography variant="body1" sx={{ fontWeight: "bold", marginBottom: "1rem", color: "#ff9f00" }}>
               Quick Links
             </Typography>
             <Grid container direction="column" spacing={1}>
-              <Grid item>
-                <Link href="#" color="inherit" variant="body2">Home</Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" color="inherit" variant="body2">About Us</Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" color="inherit" variant="body2">Car For Sale</Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" color="inherit" variant="body2">Financing</Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" color="inherit" variant="body2">Vehicle Body Types</Link>
-              </Grid>
+              {["Home", "About Us", "Car For Sale", "Financing", "Vehicle Body Type"].map((item) => (
+                <Grid item key={item}>
+                  <Link href="#" color="inherit" variant="body2" sx={{ color: "#ccc", textDecoration: "none" }}>
+                    {item}
+                  </Link>
+                </Grid>
+              ))}
             </Grid>
           </Grid>
 
-          {/* Right Section */}
+          {/* Right Section: Policies */}
           <Grid item xs={12} md={4}>
-            <Typography variant="body1" sx={{ fontWeight: 'bold', marginBottom: '1rem' }}>
-              Subscribe Our Newsletter
+            <Typography variant="body1" sx={{ fontWeight: "bold", marginBottom: "1rem", color: "#ff9f00" }}>
+              Privacy Policy
             </Typography>
-            <Typography variant="body2" sx={{ marginBottom: '1rem' }}>
-              Subscribe to get the latest mobile development news and insights delivered right to your inbox.
-            </Typography>
-            <Grid container spacing={1}>
-              <Grid item xs={9}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="Enter your email"
-                  sx={{ backgroundColor: 'white' }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  sx={{ height: '100%' }}
-                >
-                  Subscribe
-                </Button>
-              </Grid>
+            <Grid container direction="column" spacing={1}>
+              {["Terms Of Service", "Cookies Policy"].map((item) => (
+                <Grid item key={item}>
+                  <Link href="#" color="inherit" variant="body2" sx={{ color: "#ccc", textDecoration: "none" }}>
+                    {item}
+                  </Link>
+                </Grid>
+              ))}
             </Grid>
           </Grid>
         </Grid>
 
-        {/* Bottom Section */}
-        <Box sx={{ textAlign: 'center', marginTop: '2rem' }}>
-          <Typography variant="body2" color="inherit">
+        {/* Bottom Section: Copyright & Legal Links */}
+        <Box sx={{ textAlign: "center", marginTop: "3rem" }}>
+          <Typography variant="body2" sx={{ color: "#ccc" }}>
             &copy; 2024 Aethur Tech. All rights reserved.
           </Typography>
-          <Grid container spacing={2} justifyContent="center">
-            <Grid item>
-              <Link href="#" color="inherit" variant="body2">Privacy Policy</Link>
-            </Grid>
-            <Grid item>
-              <Link href="#" color="inherit" variant="body2">Terms of Service</Link>
-            </Grid>
-            <Grid item>
-              <Link href="#" color="inherit" variant="body2">Cookie Policy</Link>
-            </Grid>
-          </Grid>
+          <Box display="flex" justifyContent="center" gap={2} mt={1}>
+            <Link href="#" color="inherit" variant="body2" sx={{ color: "#ff9f00", textDecoration: "none" }}>
+              Privacy Policy
+            </Link>
+            <Link href="#" color="inherit" variant="body2" sx={{ color: "#ff9f00", textDecoration: "none" }}>
+              Terms of Service
+            </Link>
+          </Box>
         </Box>
       </Container>
     </Box>

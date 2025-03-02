@@ -9,7 +9,7 @@ const AboutUs = () => {
       <Container maxWidth="lg">
         <Grid container spacing={4}>
           {/* Left Side: Image / Code Block */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} >
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
               {/* You can place a visual of coding elements and icons similar to your design here */}
               <img src={aboutUsImage} alt="About Us" />
@@ -19,7 +19,7 @@ const AboutUs = () => {
           {/* Right Side: Code Elements / Visual */}
 
 
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} >
             <CustomLabel label="About Us" />
 
             <Typography
@@ -29,6 +29,7 @@ const AboutUs = () => {
                 margin: "1rem 0",
                 lineHeight: "1.2",
                 fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
+                
               }}
             >
               Innovating

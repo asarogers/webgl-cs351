@@ -41,8 +41,9 @@ export default function Navbar() {
       // position="fixed"
       // position="static"
       sx={{
-        backgroundColor: "#0a0a0a", color: "#fff",
-        padding: "0.5rem 0.0rem",
+        backgroundColor: "#0a0a0a", 
+        color: "#fff",
+        padding: "0",
         boxShadow: "none",
       }}
     >
@@ -62,7 +63,7 @@ export default function Navbar() {
         {/* Navigation Links */}
         {!isMobile ? (
           <Box sx={{ display: "flex", justifyContent: "space-evenly", width: "60%" }}>
-            {["Home", "About Us", "Blog", "Documentation", "Testimonials"].map((link) => (
+            {["Home", "About Us", "Blog", "Documentation", "Projects"].map((link) => (
               <Typography
                 key={link}
                 onClick={() => handleLinkClick(link)}
@@ -129,7 +130,7 @@ export default function Navbar() {
             Menu
           </Typography>
           <List>
-            {["Home", "About Us", "Blog", "Documentation", "Testimonials"].map((link) => (
+            {["Home", "About Us", "Blog", "Documentation", "Projects"].map((link) => (
               <ListItem key={link} disablePadding>
                 <ListItemButton
                   onClick={() => handleLinkClick(link)}

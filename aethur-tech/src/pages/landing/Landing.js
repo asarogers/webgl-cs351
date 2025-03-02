@@ -7,6 +7,7 @@ import Services from "./sections/OurServices";
 import Testimonials from "./sections/Testimonials";
 import Projects from "./sections/Projects";
 import BlogSection from "./sections/Blogs";
+import Newsletter from "./sections/Newsletter";
 
 // Import the function that sets up the Three.js scene
 import Canvas  from "./Canvas";
@@ -33,6 +34,7 @@ export default function Landing() {
           <Testimonials />
           <Projects />
           <BlogSection />
+          < Newsletter/>
         </Container>
       </Box>
     );
