@@ -7,15 +7,15 @@ export default function HeroSection({heroImage}) {
     <Box
       sx={{
         backgroundColor: "black",
-        padding: { xs: "3rem 1.5rem", md: "5rem 0" },
-        minHeight: "60vh",
+        padding: { xs: "0rem", md: "0rem" },
+        minHeight: "32vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
       <Container maxWidth="lg">
-        <Grid container spacing={4} alignItems="center">
+        <Grid container spacing={1} alignItems="center">
           {/* Left Content Section */}
           <Grid item xs={12} md={6}>
             <Box display="flex" alignItems="center" gap={1} marginBottom={2}>
@@ -26,7 +26,7 @@ export default function HeroSection({heroImage}) {
             <Typography variant="h3" sx={{ fontWeight: "bold", color: "white", marginBottom: "1rem" }}>
               Migrating to Linear 101
             </Typography>
-            <Typography variant="body1" sx={{ color: "rgba(255, 255, 255, 0.8)", marginBottom: "1.5rem" }}>
+            <Typography variant="body1" sx={{ color: "rgba(255, 255, 255, 0.8)", marginBottom: "0rem" }}>
               Linear helps streamline software projects, sprints, tasks, and bug tracking. Here’s how to get started.
             </Typography>
           </Grid>
@@ -48,7 +48,7 @@ export default function HeroSection({heroImage}) {
                   width: "100%",
                   height: "auto",
                   borderRadius: "12px",
-                  objectFit: "cover",
+                  // objectFit: "cover",
                 }}
               />
             </Box>

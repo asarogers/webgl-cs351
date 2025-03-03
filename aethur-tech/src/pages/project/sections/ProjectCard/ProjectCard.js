@@ -10,6 +10,8 @@ import article2 from "../../imgs/article2.png";
 import article3 from "../../imgs/article3.png";
 import HeroSection from "./HeroSection";
 import Navbar from "../../../../components/Navbar";
+import Body from "./Body"
+import OtherProjects from "./OtherProjects"
 
 // Sample project data
 const projectData = {
@@ -96,73 +98,15 @@ const ProjectCard = () => {
 
   return (
     <Box sx={{ backgroundColor: "black", color: "white" }}>
-     
+
 
       {/* Main Content */}
-      <Container maxWidth="lg" sx={{ marginTop: "3rem" }}>
-      < Navbar/>
-      {/* Hero Section */}
-      <HeroSection heroImage = {project.img}/>
-        <Grid container spacing={4}>
-          {/* Left Content Section */}
-          <Grid item xs={12} md={8}>
-            <Typography variant="body1" sx={{ marginBottom: "1rem", color: "rgba(255,255,255,0.8)" }}>
-              {project.description}
-            </Typography>
-
-            {/* Project Sections with Images */}
-            {project.sections.map((section, index) => (
-              <Box key={index} sx={{ marginBottom: "2rem" }}>
-                <Typography variant="h5" sx={{ fontWeight: "bold", marginBottom: "0.5rem" }}>
-                  {section.subtitle}
-                </Typography>
-                <Typography variant="body1" sx={{ marginBottom: "1rem", color: "rgba(255,255,255,0.8)" }}>
-                  {section.content}
-                </Typography>
-                <img
-                  src={section.img}
-                  alt={section.subtitle}
-                  style={{
-                    width: "100%",
-                    borderRadius: "10px",
-                  }}
-                />
-              </Box>
-            ))}
-
-            {/* Back Button */}
-            <Button
-              onClick={() => navigate("/portfolio")}
-              sx={{
-                marginTop: "1rem",
-                color: "#FF861D",
-                fontWeight: "bold",
-                textTransform: "none",
-                "&:hover": { textDecoration: "underline" },
-              }}
-            >
-              ⬅ Back to Portfolio
-            </Button>
-          </Grid>
-
-          {/* Right Sidebar Section */}
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ padding: "1.5rem", backgroundColor: "#111", borderRadius: "10px" }}>
-              <Typography variant="h6" sx={{ fontWeight: "bold", marginBottom: "1rem", color: "#FF861D" }}>
-                Article Details
-              </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
-                <strong>Author:</strong> {project.author}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", marginBottom: "1rem" }}>
-                <strong>Date:</strong> {project.date}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", marginBottom: "1rem" }}>
-                <strong>Category:</strong> {project.category}
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
+      <Container maxWidth="lg">
+        < Navbar />
+        {/* Hero Section */}
+        <HeroSection heroImage={project.img} />
+        < Body/>
+        < OtherProjects/>
       </Container>
     </Box>
   );

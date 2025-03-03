@@ -6,13 +6,13 @@ export default function Sidebar() {
   return (
     <Box
       sx={{
-        width: { xs: "100%", md: "300px" }, // Full width on small screens, fixed on larger screens
+        width: { xs: "100%", md: "240px" }, // Full width on small screens, fixed on larger screens
         position: { md: "sticky" }, // Stays in place when scrolling
         top: "100px", // Position from the top
         backgroundColor: "#111",
         padding: "1.5rem",
         borderRadius: "12px",
-        color: "white",
+        color: "white",          color:"white",
       }}
     >
       {/* Table of Contents */}
@@ -46,6 +46,7 @@ export default function Sidebar() {
           "& .MuiOutlinedInput-root": {
             "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
             "&:hover fieldset": { borderColor: "#FFCA28" },
+            "& input": { color: "white" }
           },
         }}
       />
