@@ -1,19 +1,28 @@
-import React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
-import { theme } from './components/colorTheme';
-import HeroSection from './pages/landing/sections/HeroSection';
-import Footer from './components/Footer';
-import "./App.css"
-import Landing from './pages/landing/Landing';
+import React from "react";
+import { ThemeProvider } from "@mui/material/styles";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { theme } from "./components/colorTheme";
+import Footer from "./components/Footer";
+import Landing from "./pages/landing/Landing";
+import Portfolio from "./pages/project/Portfolio";
+import ProjectCard from "./pages/project/sections/ProjectCard/ProjectCard";
+
+import "./App.css";
 
 function App() {
   return (
-    <div className="App" style={{background:"black"}}>
-      <ThemeProvider theme={theme}>
-        <Landing />
-        < Footer/>
-      </ThemeProvider>
-    </div>
+    <ThemeProvider theme={theme}>
+    <Router>
+      <div className="App" style={{ background: "black" }}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/portfolio/projectCard/:id" element={<ProjectCard />} />
+        </Routes>
+        <Footer />
+      </div>
+    </Router>
+    </ThemeProvider>
   );
 }
 

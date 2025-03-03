@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import logo from "../images/Final Logo/rect1.png";
 import {
   AppBar,
@@ -19,97 +20,100 @@ import { faBars, faX } from "@fortawesome/free-solid-svg-icons";
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [activeLink, setActiveLink] = useState("Home");
+  const location = useLocation(); // Get current page path
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const toggleMenu = () => setOpenMenu((prevState) => !prevState);
 
-  const handleLinkClick = (link) => {
-    setActiveLink(link);
-    if (isMobile) toggleMenu(); // Close menu on mobile
-  };
+  // Define links
+  const links = ["Home", "About Us", "Blog", "Documentation", "Portfolio"];
+  const routes = { Home: "/", Portfolio: "/portfolio" }; // Routes for valid navigation
 
   return (
-    <AppBar
-      position="sticky"
-      // position="fixed"
-      // position="static"
-      sx={{
-        backgroundColor: "#0a0a0a", 
-        color: "#fff",
-        padding: "0",
-        boxShadow: "none",
-      }}
-    >
-      <Toolbar sx={{
-        display: "flex", justifyContent: "space-between", borderRadius: "10px",
-        border: "1px solid rgba(255, 255, 255, 0.33)",
-        background: "linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(238, 237, 237, 0.05))",
-        margin: "0px 0px 0px 0px"
-      }}>
+    <AppBar position="sticky" sx={{ backgroundColor: "#0a0a0a", color: "#fff", padding: "0", boxShadow: "none" }}>
+      <Toolbar
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          borderRadius: "10px",
+          border: "1px solid rgba(255, 255, 255, 0.33)",
+          background: "linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(238, 237, 237, 0.05))",
+          margin: "0px",
+        }}
+      >
         {/* Logo Section */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <img src={logo} alt="Logo" style={{
-            width: "clamp(100px, 15vw, 175px)",
-            marginBottom: "5px"
-          }} />
+          <img src={logo} alt="Logo" style={{ width: "clamp(100px, 15vw, 175px)", marginBottom: "5px" }} />
         </Box>
+
         {/* Navigation Links */}
         {!isMobile ? (
           <Box sx={{ display: "flex", justifyContent: "space-evenly", width: "60%" }}>
-            {["Home", "About Us", "Blog", "Documentation", "Projects"].map((link) => (
-              <Typography
-                key={link}
-                onClick={() => handleLinkClick(link)}
-                sx={{
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  position: "relative",
-                  // Apply gradient text color only when the link is active
-                  backgroundImage: activeLink === link ? "linear-gradient(to top, #FF861D, #FBDF02)" : "none",
-                  backgroundClip: activeLink === link ? "text" : "none",
-                  WebkitBackgroundClip: activeLink === link ? "text" : "none",
-                  color: activeLink === link ? "transparent" : "inherit",
-                  transition: "color 0.3s ease, transform 0.3s ease",
-                  fontSize: "clamp(0.75rem, 1.5vw, 1.15rem)",
-                  "&:hover": { color: "#FFC107", transform: "translateY(-5px)" },
-                  "&::after": {
-                    content: '""',
-                    display: "block",
-                    width: activeLink === link ? "100%" : "0%",
-                    height: "2px",
-                    background: "linear-gradient(to right, #FF861D, #FBDF02)",
-                    transition: "width 0.3s ease",
-                  },
-                }}
-              >
-                {link}
-              </Typography>
-            ))}
-
-
+            {links.map((link) => {
+              const isActive = location.pathname === routes[link];
+              return routes[link] ? (
+                // Valid navigation for Home & Portfolio
+                <Link key={link} to={routes[link]} style={{ textDecoration: "none", color: "inherit" }}>
+                  <Typography
+                    sx={{
+                      cursor: "pointer",
+                      fontWeight: "bold",
+                      position: "relative",
+                      backgroundImage: isActive ? "linear-gradient(to top, #FF861D, #FBDF02)" : "none",
+                      backgroundClip: isActive ? "text" : "none",
+                      WebkitBackgroundClip: isActive ? "text" : "none",
+                      color: isActive ? "transparent" : "inherit",
+                      transition: "color 0.3s ease, transform 0.3s ease",
+                      fontSize: "clamp(0.75rem, 1.5vw, 1.15rem)",
+                      "&:hover": { color: "#FFC107", transform: "translateY(-5px)" },
+                      "&::after": {
+                        content: '""',
+                        display: "block",
+                        width: isActive ? "100%" : "0%",
+                        height: "2px",
+                        background: "linear-gradient(to right, #FF861D, #FBDF02)",
+                        transition: "width 0.3s ease",
+                      },
+                    }}
+                  >
+                    {link}
+                  </Typography>
+                </Link>
+              ) : (
+                // Display static links (No navigation)
+                <Typography
+                  key={link}
+                  sx={{
+                    cursor: "not-allowed",
+                    fontWeight: "bold",
+                    fontSize: "clamp(0.75rem, 1.5vw, 1.15rem)",
+                    opacity: 0.5, // Dim inactive links
+                  }}
+                >
+                  {link}
+                </Typography>
+              );
+            })}
           </Box>
-
         ) : (
           <>
-            <Button variant="call_to_action" sx={{marginRight: "60px"}}>Contact Us</Button>
-
+            <Button variant="call_to_action" sx={{ marginRight: "60px" }}>
+              Contact Us
+            </Button>
             <IconButton onClick={toggleMenu} sx={{ color: "#fff" }}>
               <FontAwesomeIcon icon={openMenu ? faX : faBars} />
             </IconButton>
           </>
         )}
-        {
-          !isMobile &&
-          <Button variant="call_to_action">Contact Us</Button>
-        }
+
+        {!isMobile && <Button variant="call_to_action">Contact Us</Button>}
       </Toolbar>
+
       {/* Mobile Drawer Menu */}
       <Drawer anchor="right" open={openMenu} onClose={toggleMenu}>
         <Box
@@ -123,24 +127,30 @@ export default function Navbar() {
             padding: 2,
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{ marginBottom: 2, textAlign: "center", fontWeight: "bold" }}
-          >
+          <Typography variant="h6" sx={{ marginBottom: 2, textAlign: "center", fontWeight: "bold" }}>
             Menu
           </Typography>
           <List>
-            {["Home", "About Us", "Blog", "Documentation", "Projects"].map((link) => (
+            {links.map((link) => (
               <ListItem key={link} disablePadding>
-                <ListItemButton
-                  onClick={() => handleLinkClick(link)}
-                  sx={{
-                    color: activeLink === link ? "#FFC107" : "#fff",
-                    "&:hover": { backgroundColor: "#333" },
-                  }}
-                >
-                  <ListItemText primary={link} />
-                </ListItemButton>
+                {routes[link] ? (
+                  // Valid navigation for Home & Portfolio
+                  <ListItemButton component={Link} to={routes[link]} onClick={toggleMenu}>
+                    <ListItemText
+                      primary={link}
+                      sx={{
+                        color: location.pathname === routes[link] ? "#FFC107" : "#fff",
+                        fontWeight: location.pathname === routes[link] ? "bold" : "normal",
+                      }}
+                    />
+                  </ListItemButton>
+                ) : (
+                  // Static text for other links
+                  <ListItemText
+                    primary={link}
+                    sx={{ opacity: 0.5, paddingLeft: "16px", fontSize: "1rem", color: "#999" }}
+                  />
+                )}
               </ListItem>
             ))}
           </List>
