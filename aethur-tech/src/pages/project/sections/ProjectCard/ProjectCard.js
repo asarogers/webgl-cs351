@@ -12,12 +12,13 @@ import HeroSection from "./HeroSection";
 import Navbar from "../../../../components/Navbar";
 import Body from "./Body"
 import OtherProjects from "./OtherProjects"
+import tamirVideo from "../../imgs/TAMIR/tamirVideo.mp4"
 
 // Sample project data
 const projectData = {
   "1": {
     title: "Metahumans: Adapting to Unreal 5.2",
-    img: project1,
+    img: tamirVideo,
     date: "March 24, 2024",
     author: "John Doe",
     category: "Development",
