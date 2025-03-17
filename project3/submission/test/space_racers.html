@@ -1,0 +1,53 @@
+<!-- Last edited by Dietrich Geisler 2024 -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<body onload="main()">
+    <!-- WebGL Utility Scripts -->
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix-quat03.js"></script>
+    <script src="lib/customFunctions.js"></script>
+
+    <!-- Load our terrain script -->
+    <script src="terrain.js"></script>
+
+    <!-- Select a JavaScript file -->
+    <script src="space_racers.js"></script>
+
+    <!-- Setup the Canvas -->
+    <canvas id="canvas" width="400" height="400">
+        Please use a browser that supports "canvas"
+    </canvas>
+    <div>
+        <button id="pauseButton" onclick="togglePause()">Pause</button>
+    </div>
+    
+    <div id="scoreDisplay">
+        First: 0 | Second: 0 | Ship: 0
+    </div>
+
+    <div>
+        <button onclick="randomizeScene()">Randomize</button>
+    </div>
+
+    <div>
+        <button onclick="setFollow()">Drivable Camera</button>
+    </div>
+
+    <div class="slider-container" style="padding-top: 20px;">
+        <input type="range" id="sliderZ" min="0" max="10" step=".1" value="4.0" oninput="updateBrightness(this.value)"/>
+        <label id="light" for="sliderZ">Sun brightness: 4.0</label>
+    </div>
+    
+
+    <!-- Explanation of camera controls -->
+    <p>
+        Controls for camera movement: 
+        WASD forward/backward/left/right, R to go up, and F to go down
+    </p>
+</body>
+
+</html>
