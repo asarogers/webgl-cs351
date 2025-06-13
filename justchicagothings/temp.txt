@@ -1,0 +1,693 @@
+import { loadStripe } from '@stripe/stripe-js';
+
+const PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+let stripePromise = null;
+
+function getStripe() {
+  if (!stripePromise) {
+    stripePromise = loadStripe(PUBLIC_KEY);
+  }
+  return stripePromise;
+}
+
+export async function redirectToCheckout() {
+  const stripe = await getStripe();
+
+  const res = await fetch('/api/create-checkout-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item: 'coffee', amount: 300 })
+  });
+
+  if (!res.ok) {
+    window.alert('Failed to create checkout session.');
+    return;
+  }
+
+  const { sessionId } = await res.json();
+  const { error } = await stripe.redirectToCheckout({ sessionId });
+
+  if (error) {
+    console.error(error);
+    window.alert('Stripe redirect error.');
+  }
+}
+// src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+
+const theme = createTheme({
+  palette: {
+    primary: { main: '#d87f00' },
+    background: { default: '#f5f0e8' }
+  }
+});
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </ThemeProvider>
+);
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+// src/components/EventDetailPage.jsx
+import React from 'react';
+import { useParams, Link as RouterLink } from 'react-router-dom';
+import { Container, Typography, Box, List, ListItem, Button } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { events } from '../data/events';
+
+export default function EventDetailPage() {
+  const { id } = useParams();
+  const evt = events.find(e => e.id === id);
+
+  if (!evt) {
+    return (
+      <Container sx={{ py: 4 }}>
+        <Typography variant="h5">Event Not Found</Typography>
+        <Button
+          component={RouterLink}
+          to="/"
+          startIcon={<ArrowBackIcon />}
+          sx={{ mt: 2 }}
+        >
+          Back home
+        </Button>
+      </Container>
+    );
+  }
+
+  return (
+    <Container sx={{ py: 4 }}>
+      <Button
+        component={RouterLink}
+        to="/"
+        startIcon={<ArrowBackIcon />}
+        sx={{ mb: 2 }}
+      >
+        Back home
+      </Button>
+
+      <Typography variant="h3" gutterBottom>
+        {evt.title}
+      </Typography>
+      <Typography variant="subtitle1" color="primary.main" gutterBottom>
+        {evt.date}
+      </Typography>
+
+      {/* Constrained and centered image */}
+      <Box
+        component="img"
+        src={evt.img}
+        alt={evt.title}
+        sx={{
+          width: '100%',
+          maxWidth: 600,
+          display: 'block',
+          mx: 'auto',
+          borderRadius: 1,
+          my: 2
+        }}
+      />
+
+      {evt.details.length > 1 ? (
+        <List>
+          {evt.details.map((d, i) => (
+            <ListItem key={i} sx={{ display: 'list-item' }}>
+              {d}
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Typography>{evt.details[0]}</Typography>
+      )}
+    </Container>
+  );
+}
+// src/components/Hero.jsx
+import React from 'react';
+import { Box, Typography, Button } from '@mui/material';
+
+export default function Hero({ onBrowse }) {
+  return (
+    <Box
+      sx={{
+        height: '60vh',
+        background: `url('/assets/hero.jpg') center/cover no-repeat`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.6)'
+      }}
+    >
+      <Box maxWidth={600} p={2}>
+        <Typography variant="h3" gutterBottom>
+          Discover Chicago’s Summer Blockbusters
+        </Typography>
+        <Typography variant="h6" paragraph>
+          All the hottest festivals, food stalls, and art happenings—all in one place.
+        </Typography>
+        <Button variant="contained" color="primary" onClick={onBrowse}>
+          Browse Events
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+// src/components/BuyCoffeeDialog.jsx
+import React from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  IconButton
+} from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+
+export default function BuyCoffeeDialog({ open, onClose, onBuy, onContinue }) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>
+        Enjoying the vibes?
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{ position: 'absolute', right: 8, top: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Typography>Would you like to buy me a coffee?</Typography>
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: 'center', pb: 2, px: 3, pt: 1 }}>
+        {/* Very small Continue button */}
+        <Button
+          size="small"
+          variant="text"
+          onClick={onContinue || onClose}
+          sx={{ mr: 1 }}
+        >
+          No
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
+          color="primary"
+          onClick={onBuy}
+        >
+          ☕ Buy me a coffee
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+import React from 'react';
+
+export default function EventDetails() {
+  return (
+    <div>
+      <section id="taste-of-randolph" style={{ padding: '2rem 1rem', background: '#fff' }}>
+        <h2>Taste of Randolph (June 13–15)</h2>
+        <ul>
+          <li>Gourmet slider stalls</li>
+          <li>Korean barbecue taco pop-ups</li>
+          <li>Artisanal gelato carts</li>
+          <li>Vegan street-food booths</li>
+          <li>Chicago microbrew samplings</li>
+          <li>Summer-fruit cocktail bars</li>
+          <li>Local DJ & jazz trio stages</li>
+          <li>Latin bands & improv comedy</li>
+          <li>Family face-painting zone</li>
+          <li>Balloon-artist alley</li>
+          <li>Pop-up art installations</li>
+          <li>Community-initiative booths</li>
+          <li>Mobile food & drink ticketing</li>
+          <li>Free admission along Randolph St. between Peoria & Ashland</li>
+        </ul>
+      </section>
+
+      <section id="smash-festival" style={{ padding: '2rem 1rem' }}>
+        <h2>Lyrical Lemonade Summer Smash Festival (June 20–22)</h2>
+        <p>
+          Dive into three days of hip-hop’s freshest voices, immersive art installations,
+          and vibrant summer vibes at Chicago’s premier block-party-turned-festival.
+          Curated by the tastemakers at Lyrical Lemonade, Summer Smash brings together
+          rising stars and chart-toppers across multiple stages, along with pop-up food
+          vendors, interactive murals, and colorful Lemonade Bar takeovers. Whether you’re
+          here for the next big rap act, artisanal cocktails, or Insta-worthy photo ops,
+          Summer Smash delivers an all-around sensory celebration of music, art, and community.
+        </p>
+      </section>
+
+      <section id="wells-art-fest" style={{ padding: '2rem 1rem', background: '#fff' }}>
+        <h2>Wells Street Art Festival (June 14–15)</h2>
+        <ul>
+          <li>Artist Market</li>
+          <li>Live Art Demonstrations</li>
+          <li>Interactive Mural Project</li>
+          <li>Multiple Music Stages</li>
+          <li>Food Truck Alley</li>
+          <li>Family Art Zone</li>
+          <li>Wicker Park Pop-Up Shops</li>
+        </ul>
+      </section>
+    </div>
+  );
+}
+// src/components/Card.jsx
+import React from 'react';
+import { Card as MuiCard, CardActionArea, CardMedia, CardContent, Typography, Box } from '@mui/material';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+
+export default function Card({ title, description, date, imgSrc, onClick }) {
+  return (
+    <MuiCard sx={{ maxWidth: 260, m: 1 }} onClick={onClick}>
+      <CardActionArea>
+        <CardMedia component="img" height="160" image={imgSrc} alt={title} />
+        <CardContent>
+          <Typography variant="h6" gutterBottom>{title}</Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            {description}
+          </Typography>
+          <Box display="flex" alignItems="center" color="primary.main">
+            <CalendarTodayIcon fontSize="small" sx={{ mr: 0.5 }} />
+            <Typography variant="body2">{date}</Typography>
+          </Box>
+        </CardContent>
+      </CardActionArea>
+    </MuiCard>
+  );
+}
+// src/components/NewsletterModal.jsx
+import React, { useState } from 'react';
+import { Button } from '@mui/material';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+// TODO: replace with your OAuth 2.0 Client ID
+const GOOGLE_CLIENT_ID = '74814662062-h99b0mr3mvr2q2jq4r1nnuo496qfh3a3.apps.googleusercontent.com ';
+
+// Build the raw RFC2822 message for Gmail API
+function makeRawEmail(to, subject, body) {
+  const message = [
+    `To: ${to}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'MIME-Version: 1.0',
+    `Subject: ${subject}`,
+    '',
+    body,
+  ].join('\r\n');
+
+  return window.btoa(unescape(encodeURIComponent(message)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+export default function NewsletterModal() {
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = () => {
+    // Initialize the One-Tap token client for Gmail send
+    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/gmail.send',
+      callback: async (tokenResponse) => {
+        const { access_token } = tokenResponse;
+        const raw = makeRawEmail(
+          'hello@justchicagothing.com',
+          'New Newsletter Subscriber',
+          'A new subscriber just signed up via your site!'
+        );
+        try {
+          await fetch('https://www.googleapis.com/gmail/v1/users/me/messages/send', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ raw }),
+          });
+          setSubscribed(true);
+        } catch (err) {
+          console.error('Failed to send email:', err);
+        }
+      },
+    });
+
+    // Immediately pop up the Gmail account chooser
+    tokenClient.requestAccessToken();
+  };
+
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Button
+        variant="contained"
+        color="primary"
+        disabled={subscribed}
+        onClick={handleSubscribe}
+      >
+        {subscribed ? 'You’re Subscribed!' : 'Subscribe'}
+      </Button>
+    </GoogleOAuthProvider>
+  );
+}
+// src/components/FeaturedPicks.jsx
+import React from 'react';
+import { Box, Typography, Grid } from '@mui/material';
+import Card from './Card';
+import { events } from '../data/events';
+
+export default function FeaturedPicks({ onCardClick }) {
+  return (
+    <Box id="top-events" textAlign="center" py={4} px={2}>
+      <Typography variant="h4" gutterBottom>
+        This Summer’s <Box component="span" color="primary.main">Top Events</Box>
+      </Typography>
+      <Grid container justifyContent="center">
+        {events.map(evt => (
+          <Grid item key={evt.id}>
+            <Card
+              title={evt.title}
+              description={evt.descriptionShort}
+              date={evt.date}
+              imgSrc={evt.img}
+              onClick={() => onCardClick(evt.id)}
+            />
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}
+// src/components/Footer.jsx
+import React, { useState } from 'react';
+import Box        from '@mui/material/Box';
+import Container  from '@mui/material/Container';
+import Grid       from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
+import Link       from '@mui/material/Link';
+import Button     from '@mui/material/Button';
+import NewsletterModal from './NewsLetterModal';
+
+const LINKS = [
+  { id: 'taste-of-randolph', label: 'Taste of Randolph' },
+  { id: 'summer-smash',      label: 'Summer Smash Festival' },
+  { id: 'wells-art-fest',    label: 'Wells Art Fest' },
+];
+
+function Footer() {
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = () => {
+    // Trigger the native email chooser
+    window.location.href =
+      'mailto:hello@justchicagothing.com'
+      + '?subject=JustChicagoThings%20Newsletter'
+      + '&body=Please%20add%20me%20to%20your%20mailing%20list!';
+    // Update state so button shows “You’re Subscribed!”
+    setSubscribed(true);
+  };
+
+  return (
+    <Box component="footer" bgcolor="grey.900" color="grey.100" py={6}>
+      <Container maxWidth="lg">
+        <Grid container spacing={4}>
+          {/* Get in Touch */}
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" gutterBottom>
+              Get in Touch
+            </Typography>
+            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+              <li>✉️ hello@justchicagothing.com</li>
+              <li>📞 +1 (264) 857-680</li>
+              <li>📷 @justchicagothings</li>
+            </Box>
+          </Grid>
+
+          {/* Quick Links */}
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" gutterBottom>
+              Quick Links
+            </Typography>
+            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
+              {LINKS.map(link => (
+                <li key={link.id} style={{ marginBottom: 4 }}>
+                  <Link href={`#${link.id}`} color="inherit" underline="hover">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </Box>
+          </Grid>
+
+          {/* Stay in Touch */}
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" gutterBottom>
+              Stay in Touch
+            </Typography>
+            <Typography variant="body2" paragraph>
+              No spam — just exclusive goodies and event tips.
+            </Typography>
+            <NewsletterModal />
+          </Grid>
+        </Grid>
+
+        {/* Bottom Line */}
+        <Box textAlign="center" pt={6}>
+          <Typography variant="caption" color="grey.500">
+            © 2025 JustChicagoThings.com &bull;{' '}
+            <Link href="#" color="inherit" underline="hover">
+              Privacy Policy
+            </Link>{' '}
+            &bull;{' '}
+            <Link href="#" color="inherit" underline="hover">
+              Terms of Service
+            </Link>
+          </Typography>
+        </Box>
+      </Container>
+      
+    </Box>
+  );
+}
+
+// “View More” helper button — import Footer and use <Footer.BuyMoreButton />
+Footer.BuyMoreButton = function BuyMoreButton(props) {
+  return (
+    <div style={{ height: '100px' }}>
+      <Button variant="outlined" color="inherit" {...props}>
+        View More
+      </Button>
+    </div>
+  );
+};
+
+export default Footer;
+import React from 'react';
+
+export default function Modal({ onClose, onBuy }) {
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <button className="close" onClick={onClose}>×</button>
+        <h2>Enjoying the vibes?</h2>
+        <p>Would you like to buy me a coffee?</p>
+        <button className="btn" onClick={onBuy}>☕ Buy me a coffee</button>
+      </div>
+    </div>
+  );
+}
+// src/components/Header.jsx
+import React from 'react';
+import { AppBar, Toolbar, Typography, Link, Box } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+
+export default function Header() {
+  return (
+    <AppBar position="static" color="transparent" elevation={0}>
+      <Toolbar>
+        <Typography variant="h6" sx={{ flexGrow: 1, color: 'text.primary' }}>
+          Just Chicago Things
+        </Typography>
+        <Box>
+          <Link component={RouterLink} to="/" sx={{ mx: 1 }}>Home</Link>
+          <Link href="/#top-events" sx={{ mx: 1 }}>Events</Link>
+          <Link component={RouterLink} to="/map" sx={{ mx: 1 }}>Map</Link>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export default async function handler(req, res) {
+  console.log("✅ API hit");
+
+  if (req.method !== 'POST') {
+    console.log("❌ Wrong method:", req.method);
+    return res.status(405).send('Method not allowed');
+  }
+
+  const { name, email } = req.body;
+  console.log("📨 Incoming data:", name, email);
+  console.log("🔐 API KEY present?", !!process.env.RESEND_API_KEY);
+
+  try {
+    const result = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: 'softwareace.j@gmail.com',
+      subject: 'New Newsletter Signup',
+      html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p>`,
+    });
+
+    console.log("✅ Email sent:", result);
+    return res.status(200).json({ success: true, result });
+  } catch (error) {
+    console.error("❌ Email error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+// src/App.jsx
+import React, { useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import Header from './components/Header';
+import Hero from './components/Hero';
+import FeaturedPicks from './components/FeaturedPicks';
+import EventDetailPage from './components/EventDetailPage';
+import Footer from './components/Footer';
+import BuyCoffeeDialog from './components/BuyCoffeeDialog';
+import { redirectToCheckout } from './stripeFunctions';
+import Box from '@mui/material/Box';
+
+
+export default function App() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCardClick = (id) => navigate(`/events/${id}`);
+  const openDialog = () => setDialogOpen(true);
+  const closeDialog = () => setDialogOpen(false);
+  const handleBuyCoffee = async () => {
+    closeDialog();
+    await redirectToCheckout();
+  };
+
+  return (
+    <>
+      <Header />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <Hero onBrowse={openDialog} />
+              <FeaturedPicks onCardClick={handleCardClick} />
+              <Box display="flex" justifyContent="center" mt={4}>
+                <Footer.BuyMoreButton onClick={openDialog} />
+              </Box>
+              <Footer />
+              <BuyCoffeeDialog
+                open={dialogOpen}
+                onClose={closeDialog}
+                onBuy={handleBuyCoffee}
+              />
+            </>
+          }
+        />
+        <Route path="/events/:id" element={<EventDetailPage />} />
+      </Routes>
+    </>
+  );
+}
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+export const events = [
+    {
+      id: 'taste-of-randolph',
+      title: 'Taste of Randolph',
+      descriptionShort: 'Gourmet sliders, Korean BBQ tacos, artisanal gelato & more',
+      date: 'June 13–15',
+      img: '/assets/tasteofrandolph.png',
+      details: [
+        'Gourmet slider stalls',
+        'Korean barbecue taco pop-ups',
+        'Artisanal gelato carts',
+        'Vegan street-food booths',
+        'Chicago microbrew samplings',
+        'Summer-fruit cocktail bars',
+        'Local DJ & jazz trio stages',
+        'Latin bands & improv comedy',
+        'Family face-painting zone',
+        'Balloon-artist alley',
+        'Pop-up art installations',
+        'Community-initiative booths',
+        'Mobile food & drink ticketing',
+        'Free admission along Randolph St. between Peoria & Ashland'
+      ]
+    },
+    {
+      id: 'summer-smash',
+      title: 'Lyrical Lemonade Summer Smash Festival',
+      descriptionShort: 'Hip-hop acts, immersive art, Lemonade Bar takeovers',
+      date: 'June 20–22',
+      img: '/assets/lyricalsummer.jpg',
+      details: [
+        `Dive into three days of hip-hop’s freshest voices, immersive art installations, 
+        and vibrant summer vibes at Chicago’s premier block-party-turned-festival. 
+        Curated by the tastemakers at Lyrical Lemonade, Summer Smash brings together 
+        rising stars and chart-toppers across multiple stages, along with pop-up food 
+        vendors, interactive murals, and colorful Lemonade Bar takeovers. Whether you’re 
+        here for the next big rap act, artisanal cocktails, or Insta-worthy photo ops, 
+        Summer Smash delivers an all-around sensory celebration of music, art, and community.`
+      ]
+    },
+    {
+      id: 'wells-art-fest',
+      title: 'Wells Street Art Festival',
+      descriptionShort: 'Artist market, live demos, interactive murals, music stages',
+      date: 'June 14–15',
+      img: '/assets/artfestival.png',
+      details: [
+        'Artist Market',
+        'Live Art Demonstrations',
+        'Interactive Mural Project',
+        'Multiple Music Stages',
+        'Food Truck Alley',
+        'Family Art Zone',
+        'Wicker Park Pop-Up Shops'
+      ]
+    }
+  ];
+  
