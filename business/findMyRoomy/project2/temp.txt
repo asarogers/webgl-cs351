@@ -1,0 +1,1923 @@
+import { Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage'; // Your main page
+import BlogList from './pages/Blogs/BlogList';
+import SingleBlog from './pages/Blogs/SingleBlog';
+import { useState } from 'react';
+import ContactUs from './components/ContactUs';
+
+function App() {
+    const [isOpen, setIsOpen] = useState(false);
+  return (
+    <Routes>
+        
+      <Route path="/" element={<LandingPage setIsOpen={setIsOpen} isOpen = {isOpen}/>} />
+      <Route path="/blog" element={<BlogList setIsOpen={setIsOpen} isOpen={isOpen}/>} />
+      <Route path="/blog/:id" element={<SingleBlog setIsOpen={setIsOpen} isOpen={isOpen}/>} />
+    </Routes>
+  );
+}
+
+export default App;
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+import { BrowserRouter } from 'react-router-dom';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>
+);
+// src/pages/SingleBlog.tsx
+
+import React, { useState } from "react";
+import {
+  Box,
+  Typography,
+  Container,
+  Avatar,
+  Chip,
+  Divider,
+  Button,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  Calendar,
+  Clock,
+  ArrowLeft,
+  Share2,
+  Bookmark,
+} from "lucide-react";
+import BlogSidebar from "../../components/BlogSidebar";
+import { blogData } from "./data/blogData";
+import Footer from "../../components/Footer";
+import ContactUs from "../../components/ContactUs";
+
+
+export default function SingleBlog({setIsOpen, isOpen}) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const blog = blogData[Number(id)];
+
+  // Snackbars for share & bookmark fallbacks
+  const [shareSnackbarOpen, setShareSnackbarOpen] = useState(false);
+  const [bookmarkSnackbarOpen, setBookmarkSnackbarOpen] = useState(false);
+
+  if (!blog) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        {isOpen && <ContactUs onClose={() => setIsOpen(false)} />}
+        <div className="text-center">
+          <div className="text-6xl mb-4">📝</div>
+          <Typography variant="h5" color="error" className="mb-4">
+            Blog post not found.
+          </Typography>
+          <Button
+            onClick={() => navigate("/blog")}
+            variant="contained"
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Return to Blog
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const sectionTitles = blog.sections.map((s) => s.subtitle);
+
+  // 1) Share handler (Web Share API or copy fallback)
+  const shareArticle = () => {
+    const shareData = {
+      title: blog.title,
+      text: blog.excerpt,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch((err) => {
+        console.error("Share failed:", err);
+      });
+    } else {
+      navigator.clipboard
+        .writeText(shareData.url)
+        .then(() => setShareSnackbarOpen(true))
+        .catch((err) => console.error("Copy failed:", err));
+    }
+  };
+
+  // 2) Bookmark handler
+  const bookmarkArticle = () => {
+    const title = blog.title;
+    const url = window.location.href;
+    const win: any = window;
+
+    let succeeded = false;
+    try {
+      // Firefox <=22
+      if (win.sidebar && win.sidebar.addPanel) {
+        win.sidebar.addPanel(title, url, "");
+        succeeded = true;
+      }
+      // IE Favorites
+      else if (win.external && win.external.AddFavorite) {
+        win.external.AddFavorite(url, title);
+        succeeded = true;
+      }
+    } catch (e) {
+      console.warn("Programmatic bookmark failed", e);
+    }
+
+    if (!succeeded) {
+      setBookmarkSnackbarOpen(true);
+    }
+  };
+
+  return (
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <Container maxWidth="lg" className="py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar */}
+            <div className="lg:w-1/4 order-2 lg:order-1">
+              <div className="sticky top-8 z-10">
+                <BlogSidebar sections={sectionTitles} />
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="lg:w-3/4 order-1 lg:order-2">
+              {/* Back Button */}
+              <Button
+                onClick={() => navigate(-1)}
+                className="mb-6 text-gray-600 hover:text-gray-800 normal-case"
+                startIcon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Back to Blog
+              </Button>
+
+              {/* Category Badge */}
+              <div className="mb-4">
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {blog.category}
+                </span>
+              </div>
+
+              {/* Title */}
+              <Typography
+                variant="h3"
+                className="font-bold mb-6 text-gray-900 leading-tight"
+              >
+                {blog.title}
+              </Typography>
+
+              {/* Author & Meta Info */}
+              <div className="flex items-center gap-4 mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                <Avatar className="w-12 h-12 bg-blue-600">
+                  {blog.author[0]}
+                </Avatar>
+                <div className="flex-1">
+                  <Typography variant="body1" className="font-semibold text-gray-900">
+                    {blog.author}
+                  </Typography>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(blog.date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{blog.readTime}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Share & Bookmark */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="small"
+                    onClick={shareArticle}
+                    className="min-w-0 p-2"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={bookmarkArticle}
+                    className="min-w-0 p-2"
+                  >
+                    <Bookmark className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Featured Image/Video */}
+              {blog.image && (
+                /\.(mp4|webm)$/i.test(blog.image) ? (
+                  <video
+                    src={blog.image}
+                    autoPlay
+                    loop
+                    muted
+                    controls
+                    className="w-full rounded-2xl mb-8 shadow-lg"
+                    style={{ maxHeight: "400px", objectFit: "cover" }}
+                  />
+                ) : (
+                  <img
+                    src={blog.image}
+                    alt={blog.title}
+                    className="w-full rounded-2xl mb-8 shadow-lg"
+                    style={{ maxHeight: "400px", objectFit: "cover" }}
+                  />
+                )
+              )}
+
+              {/* Introduction */}
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg mb-8">
+                <Typography
+                  variant="subtitle1"
+                  className="text-gray-700 leading-relaxed font-medium"
+                >
+                  {blog.introText}
+                </Typography>
+              </div>
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mb-8">
+                {blog.tags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    label={`#${tag}`}
+                    variant="outlined"
+                    size="small"
+                    className="border-gray-300 text-gray-600 hover:bg-gray-100"
+                  />
+                ))}
+              </div>
+
+              {/* Article Sections */}
+              <article className="prose prose-lg max-w-none">
+                {blog.sections.map((section, idx) => {
+                  const secId = section.subtitle
+                    .replace(/\s+/g, "-")
+                    .toLowerCase();
+                  return (
+                    <section
+                      key={idx}
+                      id={secId}
+                      className="mb-12 scroll-mt-24"
+                    >
+                      <Typography
+                        variant="h4"
+                        className="font-bold mb-6 text-gray-900 border-b border-gray-200 pb-2"
+                      >
+                        {section.subtitle}
+                      </Typography>
+
+                      {Array.isArray(section.content) ? (
+                        <div className="space-y-6">
+                          {section.content.map((item, i) => (
+                            <div
+                              key={i}
+                              className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm"
+                            >
+                              <Typography
+                                variant="h6"
+                                className="font-bold text-gray-900 mb-3"
+                              >
+                                {item.label}
+                              </Typography>
+                              <Typography className="text-gray-700 leading-relaxed">
+                                {item.text}
+                              </Typography>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Typography className="text-gray-700 leading-relaxed mb-6 whitespace-pre-line">
+                          {section.content}
+                        </Typography>
+                      )}
+
+                      {section.video && (
+                        <video
+                          src={section.video}
+                          controls
+                          className="w-full rounded-xl mt-6 mb-6 shadow-lg"
+                          style={{ maxHeight: "400px" }}
+                        />
+                      )}
+                      {section.image && (
+                        <img
+                          src={section.image}
+                          alt={section.subtitle}
+                          className="w-full rounded-xl mt-6 mb-6 shadow-lg"
+                          style={{ maxHeight: "400px", objectFit: "cover" }}
+                        />
+                      )}
+                    </section>
+                  );
+                })}
+              </article>
+
+              {/* Article Footer */}
+              <Divider className="my-8" />
+              <Box className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 mb-8">
+                <div className="flex justify-between items-center">
+                  <Box>
+                    <Typography variant="body2" className="text-gray-600 mb-1">
+                      Written with ❤️ by
+                    </Typography>
+                    <Typography variant="h6" className="font-semibold text-gray-900">
+                      {blog.author}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={shareArticle}
+                    className="bg-blue-600 hover:bg-blue-700 normal-case"
+                  >
+                    Share Article
+                  </Button>
+                </div>
+              </Box>
+
+              {/* Related Posts / Navigation */}
+              <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+                <Link
+                  to="/blog"
+                  className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to all posts
+                </Link>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 normal-case"
+                >
+                  Save for Later
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </div>
+
+      {/* Share fallback Snackbar */}
+      <Snackbar
+        open={shareSnackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setShareSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" onClose={() => setShareSnackbarOpen(false)}>
+          Link copied to clipboard!
+        </Alert>
+      </Snackbar>
+
+      {/* Bookmark fallback Snackbar */}
+      <Snackbar
+        open={bookmarkSnackbarOpen}
+        autoHideDuration={5000}
+        onClose={() => setBookmarkSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="info" onClose={() => setBookmarkSnackbarOpen(false)}>
+          Press Ctrl +D (Windows) or Cmd +D (Mac) to bookmark this page.
+        </Alert>
+      </Snackbar>
+      <Footer setIsOpen={setIsOpen}/>
+    </>
+  );
+}
+// src/pages/Blogs/BlogList.tsx
+
+import React, { useState } from "react";
+import {
+  Calendar,
+  Clock,
+  ArrowRight,
+  User,
+  Heart,
+  MessageCircle,
+  TrendingUp,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { blogPosts, categories } from "./data/blogData";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import ContactUs from "../../components/ContactUs";
+
+
+export default function BlogList({setIsOpen, isOpen}) {
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredPosts = blogPosts.filter((post) => {
+    const matchesCategory =
+      selectedCategory === "All" || post.category === selectedCategory;
+    const matchesSearch =
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.tags.some((tag) =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    return matchesCategory && matchesSearch;
+  });
+
+  const featuredPosts = filteredPosts.filter((post) => post.featured);
+  const regularPosts = filteredPosts.filter((post) => !post.featured);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-[#FDFBF7] to-white">
+      {/* Navbar stays at top */}
+        {isOpen && <ContactUs onClose={() => setIsOpen(false)} />}
+      <Navbar setIsOpen={setIsOpen}/>
+
+      {/* Main content grows to fill available space */}
+      <main className="flex-grow px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full mb-6">
+              <TrendingUp className="w-4 h-4 mr-2 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-800">
+                Latest Insights
+              </span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              The MyRoomie Blog
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Real insights, practical tips, and industry analysis from
+              roommate experts who've been there.
+            </p>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-12 flex flex-col md:flex-row gap-6 items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search articles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-3 pl-12 bg-white border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all duration-200"
+              />
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                🔍
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
+                    selectedCategory === category
+                      ? "bg-black text-white shadow-lg"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Featured Posts */}
+          {featuredPosts.length > 0 && (
+            <div className="mb-16">
+              <h3 className="text-2xl font-bold mb-8 flex items-center">
+                <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-lg text-sm mr-3">
+                  Featured
+                </span>
+                Must-Read Articles
+              </h3>
+              <div className="grid md:grid-cols-2 gap-8">
+                {featuredPosts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100"
+                  >
+                    <Link to={`/blog/${post.id}`}>
+                      <div className="relative overflow-hidden">
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-4 left-4">
+                          <span className="bg-black text-white px-3 py-1 rounded-full text-sm font-medium">
+                            {post.category}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-8">
+                        <div className="flex items-center text-sm text-gray-500 mb-4">
+                          <User className="w-4 h-4 mr-2" />
+                          <span className="mr-4">{post.author}</span>
+                          <Calendar className="w-4 h-4 mr-2" />
+                          <span className="mr-4">
+                            {new Date(post.date).toLocaleDateString()}
+                          </span>
+                          <Clock className="w-4 h-4 mr-2" />
+                          <span>{post.readTime}</span>
+                        </div>
+
+                        <h3 className="text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+                          {post.title}
+                        </h3>
+
+                        <p className="text-gray-600 mb-4 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <Heart className="w-4 h-4 mr-1" />
+                            <span>{post.likes}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <MessageCircle className="w-4 h-4 mr-1" />
+                            <span>{post.comments}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Regular Posts */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {regularPosts.map((post) => (
+              <article
+                key={post.id}
+                className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden border border-gray-100"
+              >
+                <Link to={`/blog/${post.id}`}>
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span className="bg-white/90 backdrop-blur text-gray-800 px-3 py-1 rounded-full text-xs font-medium">
+                        {post.category}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    <div className="flex items-center text-xs text-gray-500 mb-3">
+                      <span className="mr-3">{post.author}</span>
+                      <span className="mr-3">•</span>
+                      <span className="mr-3">
+                        {new Date(post.date).toLocaleDateString()}
+                      </span>
+                      <span className="mr-3">•</span>
+                      <span>{post.readTime}</span>
+                    </div>
+
+                    <h3 className="text-lg font-bold mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      {post.excerpt}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.tags.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-gray-100 text-gray-600 px-2 py-1 rounded-lg text-xs"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center space-x-3 text-xs text-gray-500">
+                      <div className="flex items-center">
+                        <Heart className="w-3 h-3 mr-1" />
+                        <span>{post.likes}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <MessageCircle className="w-3 h-3 mr-1" />
+                        <span>{post.comments}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </article>
+            ))}
+          </div>
+
+          {/* No Results */}
+          {filteredPosts.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📝</div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                No articles found
+              </h3>
+              <p className="text-gray-500">
+                Try adjusting your search terms or selected category.
+              </p>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Footer at the very bottom, spans full width */}
+      <div className="w-full">
+        <Footer setIsOpen ={setIsOpen}/>
+      </div>
+    </div>
+  );
+}
+import React, { useState, useEffect } from "react";
+import ContactUs from "../components/ContactUs.tsx";
+import AOS from "aos";
+import "aos/dist/aos.css";
+
+import Safety from "../components/Safety.tsx";
+import Navbar from "../components/Navbar.tsx";
+import Footer from "../components/Footer.tsx";
+import PainPoints from "../components/PainPoints.tsx";
+import HeroSection from "../components/HeroSection.tsx";
+import Features from "../components/Features.tsx";
+import HowItWorks from "../components/HowItWorks.tsx";
+import CTA from "../components/CTA.tsx";
+import Guarantees from "../components/Guarantees.tsx";
+
+export default function LandingPage({setIsOpen,isOpen}) {
+
+
+  useEffect(() => {
+    AOS.init({ duration: 800 });
+  }, []);
+  return (
+    <div className="bg-[#FDFBF7] text-gray-900 font-sans overflow-x-hidden">
+      {isOpen && <ContactUs onClose={() => setIsOpen(false)} />}
+        < Navbar setIsOpen={setIsOpen}/>
+      
+     <HeroSection />
+     < PainPoints />
+     <Features />
+      < HowItWorks />
+
+      {/* Social Proof Section */}
+      {/* <section className="px-6 py-20 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Real Stories from Real Users</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              See why thousands choose MyRoomie over other platforms.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-gradient-to-br from-[#FDFBF7] to-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                <div className="flex mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-500 fill-current" />
+                  ))}
+                </div>
+                <p className="text-lg font-medium mb-6 italic text-gray-700">"{testimonial.quote}"</p>
+                <div className="border-t pt-4">
+                  <div className="font-bold text-gray-900">{testimonial.name}</div>
+                  <div className="text-gray-600">{testimonial.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section> */}
+
+      <Safety />
+      < Guarantees />
+      < CTA />
+     < Footer setIsOpen={setIsOpen}/>
+    </div>
+  );
+}import React from 'react';
+import { Star, Quote } from 'lucide-react';
+
+const testimonials = [
+  {
+    name: "Sarah M.",
+    age: 24,
+    location: "Austin, TX",
+    quote: "Finally a roommate app that doesn't feel sketchy. The verification system actually works and I found my perfect roommate in 2 weeks!",
+    rating: 5,
+  },
+  {
+    name: "Jake L.",
+    age: 27,
+    location: "Denver, CO",
+    quote: "Being able to draw my zone and find real listings is a game changer. No more fake apartments or broken location filters.",
+    rating: 5,
+  },
+  {
+    name: "Maya P.",
+    age: 22,
+    location: "Seattle, WA",
+    quote: "I used to be scared of scams—this felt like Airbnb + Hinge for roommates. The vibe matching actually works!",
+    rating: 5,
+  },
+];
+
+export default function Testimonials() {
+  return (
+    <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            What our early users are saying
+          </h2>
+          <p className="text-xl text-gray-600">
+            Real stories from real people who found their perfect roommates
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {testimonials.map((testimonial, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow relative"
+            >
+              <Quote className="w-8 h-8 text-teal-500 mb-4" />
+              
+              <div className="flex mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                ))}
+              </div>
+
+              <blockquote className="text-gray-700 leading-relaxed mb-6">
+                "{testimonial.quote}"
+              </blockquote>
+
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-teal-400 to-cyan-400 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-lg">
+                    {testimonial.name.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                  <p className="text-sm text-gray-500">
+                    Age {testimonial.age} • {testimonial.location}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}import {
+    MapPin,
+    Users,
+    Home,
+    Zap,
+    Search,
+    CheckCircle,
+    Shield,
+    Filter,
+    MessageCircle,
+    RefreshCw,
+  } from "lucide-react";
+  
+  // Features Section
+  export const features = [
+    {
+      icon: <MapPin className="w-8 h-8" />,
+      title: "Draw Your Zone",
+      description:
+        "Select your exact living area using intuitive touch gestures on our interactive map.",
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      icon: <Users className="w-8 h-8" />,
+      title: "Match by Vibe",
+      description:
+        "Find compatible roommates based on lifestyle preferences, values, and daily routines.",
+      color: "from-purple-500 to-pink-500",
+    },
+    {
+      icon: <Home className="w-8 h-8" />,
+      title: "Group Applications",
+      description:
+        "Apply together and split costs easily with built-in group coordination tools.",
+      color: "from-green-500 to-teal-500",
+    },
+    {
+      icon: <Zap className="w-8 h-8" />,
+      title: "Instant Matching",
+      description:
+        "Get matched instantly with AI-powered compatibility scoring and real-time notifications.",
+      color: "from-orange-500 to-red-500",
+    },
+  ];
+  
+  // How It Works Steps
+  export const steps = [
+    {
+      icon: <Search className="w-12 h-12" />,
+      title: "Draw Your Zone",
+      description:
+        "Use our interactive map to draw your ideal living area and set your preferences.",
+    },
+    {
+      icon: <Users className="w-12 h-12" />,
+      title: "Get Matched",
+      description:
+        "Our AI connects you with compatible roommates and available apartments in your zone.",
+    },
+    {
+      icon: <CheckCircle className="w-12 h-12" />,
+      title: "Apply Together",
+      description:
+        "Submit applications in one click, alone or with your matched group.",
+    },
+  ];
+  
+  // Pain Points Section
+  export const painPoints = [
+    {
+      icon: <Shield className="w-6 h-6" />,
+      problem: "90% Fake Profiles",
+      solution: "Verified users & background checks keep it real",
+      color: "text-red-600",
+      impact: "Save $2,400 avg. scam loss",
+    },
+    {
+      icon: <Filter className="w-6 h-6" />,
+      problem: "Filters Don't Work",
+      solution: "AI-powered filtering & dealbreaker logic that actually works",
+      color: "text-orange-600",
+      impact: "Save 120+ hours searching",
+    },
+    {
+      icon: <MessageCircle className="w-6 h-6" />,
+      problem: "Paywalls to Message",
+      solution: "Always-free matching & messaging for everyone",
+      color: "text-purple-600",
+      impact: "Save $360/year in fees",
+    },
+    {
+      icon: <RefreshCw className="w-6 h-6" />,
+      problem: "Outdated Listings",
+      solution: "Real-time partner apartment inventory that's always fresh",
+      color: "text-blue-600",
+      impact: "Avoid dead-end searches",
+    },
+  ];
+  
+  // Testimonials Section
+  export const testimonials = [
+    {
+      name: "Sarah M.",
+      role: "Marketing Manager, Chicago",
+      quote:
+        "Found my perfect roommate in just 3 days after months of searching elsewhere. The AI matching is incredibly accurate.",
+      rating: 5,
+    },
+    {
+      name: "Mike R.",
+      role: "Software Engineer, Austin",
+      quote:
+        "The group application feature saved us so much time. We applied to 12 places in one afternoon and got approved for our top choice.",
+      rating: 5,
+    },
+    {
+      name: "Jessica L.",
+      role: "Graduate Student, Boston",
+      quote:
+        "I was skeptical about online roommate finding, but the verification process here made me feel completely safe.",
+      rating: 5,
+    },
+  ];
+  
+  // Guarantees Section
+  export const guarantees = [
+    {
+      icon: <CheckCircle className="w-6 h-6 text-green-600" />,
+      title: "7-Day Match Promise",
+      description:
+        "Find compatible matches within a week, or we'll personally help you find options.",
+    },
+    {
+      icon: <Shield className="w-6 h-6 text-blue-600" />,
+      title: "100% Verified Profiles",
+      description:
+        "Every user goes through identity verification and background screening.",
+    },
+    {
+      icon: <MessageCircle className="w-6 h-6 text-purple-600" />,
+      title: "Always Free Core Features",
+      description:
+        "Matching, messaging, and basic features remain free forever.",
+    },
+  ];
+  import React, { useEffect, useState } from "react";
+import { Box, Typography, Divider } from "@mui/material";
+
+export default function BlogSidebar({ sections }: { sections: string[] }) {
+  const [activeSection, setActiveSection] = useState("");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find all currently intersecting entries
+        const intersecting = entries.filter(entry => entry.isIntersecting);
+        
+        if (intersecting.length > 0) {
+          // Sort by their position from top of viewport
+          intersecting.sort((a, b) => {
+            return a.boundingClientRect.top - b.boundingClientRect.top;
+          });
+          
+          // Set the topmost intersecting section as active
+          const topSection = intersecting[0];
+          setActiveSection(topSection.target.id);
+        }
+      },
+      { 
+        threshold: 0.1, // Trigger when 10% of the element is visible
+        rootMargin: "-100px 0px -50% 0px" // Adjust detection zone
+      }
+    );
+
+    // Also add a scroll listener as backup for more precise tracking
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 150; // Offset for better UX
+      
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const id = sections[i].replace(/\s+/g, "-").toLowerCase();
+        const element = document.getElementById(id);
+        
+        if (element && element.offsetTop <= scrollPosition) {
+          setActiveSection(id);
+          break;
+        }
+      }
+    };
+
+    sections.forEach((section) => {
+      const id = section.replace(/\s+/g, "-").toLowerCase();
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Initial check
+    handleScroll();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [sections]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        position: "sticky",
+        top: "32px",
+        backgroundColor: "white",
+        border: "1px solid #e0e0e0",
+        borderRadius: "12px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        p: 3,
+        width: "100%",
+        maxWidth: "280px",
+        maxHeight: "calc(100vh - 64px)",
+        overflowY: "auto",
+      }}
+    >
+      <Typography 
+        variant="h6" 
+        fontWeight="bold" 
+        mb={2}
+        sx={{ color: "#1976d2" }}
+      >
+        📋 Table of Contents
+      </Typography>
+      
+      <Box sx={{ mb: 2 }}>
+        {sections.map((title, i) => {
+          const id = title.replace(/\s+/g, "-").toLowerCase();
+          const isActive = activeSection === id;
+          
+          return (
+            <Typography
+              key={i}
+              onClick={() => scrollToSection(id)}
+              sx={{
+                cursor: "pointer",
+                mb: 1.5,
+                py: 0.5,
+                px: 1,
+                borderRadius: "6px",
+                fontSize: "0.875rem",
+                fontWeight: isActive ? "600" : "400",
+                color: isActive ? "#1976d2" : "#555",
+                backgroundColor: isActive ? "#e3f2fd" : "transparent",
+                transition: "all 0.2s ease",
+                "&:hover": { 
+                  color: "#1976d2",
+                  backgroundColor: "#f5f5f5"
+                },
+                borderLeft: isActive ? "3px solid #1976d2" : "3px solid transparent",
+                marginLeft: "-4px",
+                paddingLeft: "8px"
+              }}
+            >
+              {title}
+            </Typography>
+          );
+        })}
+      </Box>
+      
+      <Divider sx={{ my: 2 }} />
+      
+      <Typography 
+        variant="caption" 
+        sx={{ 
+          color: "#777",
+          fontStyle: "italic",
+          display: "block",
+          textAlign: "center"
+        }}
+      >
+        💬 More articles coming soon
+      </Typography>
+    </Box>
+  );
+}import React, { useEffect } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { motion } from "framer-motion";
+import { painPoints } from "./Data.tsx";
+
+export default function PainPoints() {
+  useEffect(() => {
+    AOS.init({ duration: 800 });
+  }, []);
+  return (
+    <section
+      data-aos="fade-up"
+      className="px-6 py-20 bg-gradient-to-br from-[#E4DDD2] to-[#D6CFC4]"
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            What's broken — and how we fix it
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            The average person wastes $11,000+ and 6 months searching for
+            roommates. Here's how we change that.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {painPoints.map((point, index) => (
+            <motion.div
+              key={index}
+              whileHover={{ scale: 1.02 }}
+              className="group bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
+              data-aos="fade-up"
+              data-aos-delay={index * 100}
+            >
+              <div className="flex items-start space-x-4">
+                <div
+                  className={`p-3 rounded-xl bg-gradient-to-br ${
+                    point.color === "text-red-600"
+                      ? "from-red-100 to-red-200"
+                      : point.color === "text-orange-600"
+                      ? "from-orange-100 to-orange-200"
+                      : point.color === "text-purple-600"
+                      ? "from-purple-100 to-purple-200"
+                      : "from-blue-100 to-blue-200"
+                  }`}
+                >
+                  {point.icon}
+                </div>
+                <div className="flex-1">
+                  <h3
+                    className={`text-xl font-bold mb-2 ${point.color} group-hover:scale-105 transition-transform`}
+                  >
+                    {point.problem}
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed mb-3">
+                    <span className="text-green-600 font-semibold">
+                      Our solution:
+                    </span>{" "}
+                    {point.solution}
+                  </p>
+                  <div className="text-sm text-gray-500 font-medium bg-gray-50 px-3 py-1 rounded-full inline-block">
+                    💰 {point.impact}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+import React, { useState, useEffect } from "react";
+import {
+  MapPin,
+  Shield,
+  Filter,
+  MessageCircle,
+  RefreshCw,
+  Users,
+  Home,
+  Zap,
+  CheckCircle,
+  ArrowRight,
+  Star,
+  Clock,
+  Search,
+  Award,
+  TrendingUp,
+} from "lucide-react";
+
+export default function Safety() {
+  return (
+    <section className="px-6 py-20 bg-white">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            Built for Safety & Trust
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Your safety is our priority. Multiple verification layers ensure
+            authentic connections.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl">
+            <Shield className="w-16 h-16 mx-auto mb-6 text-blue-600" />
+            <h3 className="text-xl font-bold mb-4">Identity Verification</h3>
+            <p className="text-gray-600">
+              Government ID verification and background checks for all users.
+            </p>
+          </div>
+
+          <div className="text-center p-8 bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl">
+            <Award className="w-16 h-16 mx-auto mb-6 text-green-600" />
+            <h3 className="text-xl font-bold mb-4">Community Standards</h3>
+            <p className="text-gray-600">
+              Strict community guidelines with 24/7 moderation and reporting.
+            </p>
+          </div>
+
+          <div className="text-center p-8 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl">
+            <Users className="w-16 h-16 mx-auto mb-6 text-purple-600" />
+            <h3 className="text-xl font-bold mb-4">Smart Matching</h3>
+            <p className="text-gray-600">
+              AI-powered compatibility scoring prevents mismatched situations.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}import React, { useState, useEffect } from "react";
+import "aos/dist/aos.css";
+import { motion } from "framer-motion";
+import {
+  steps,
+} from "./Data.tsx"; 
+
+export default function HowItWorks() {
+  return (
+  <section id="howitworks" data-aos="fade-up" className="scroll-mt-24 px-6 py-20 bg-gradient-to-br from-[#E4DDD2] to-[#D6CFC4]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              How It Works
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Three simple steps to find your perfect roommate and apartment match.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {steps.map((step, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.03 }}
+                className="text-center group"
+                data-aos="fade-up"
+                data-aos-delay={index * 150}
+              >
+                <div className="relative mb-8">
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white group-hover:scale-110 transition-transform duration-300 shadow-2xl">
+                    {step.icon}
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-gray-200 text-sm font-bold text-gray-800">
+                    {index + 1}
+                  </div>
+                </div>
+
+                <h4 className="text-xl font-bold mb-4 group-hover:text-blue-600 transition-colors">
+                  {step.title}
+                </h4>
+                <p className="text-gray-600 leading-relaxed">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+  );
+}import { useState } from "react";
+import "aos/dist/aos.css";
+import { motion } from "framer-motion";
+import {
+  features,
+} from "./Data.tsx"; 
+
+export default function Features() {
+  const [activeFeature, setActiveFeature] = useState(0);
+
+  const nextFeature = () => {
+    setActiveFeature((prev) => (prev + 1) % features.length);
+  };
+
+  const prevFeature = () => {
+    setActiveFeature((prev) => (prev - 1 + features.length) % features.length);
+  };
+
+  return (
+    <section id="features" data-aos="fade-up" className="scroll-mt-20 px-6 py-20 bg-white">
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-16">
+        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+          Features You'll Actually Use
+        </h2>
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          Built by roommate searchers, for roommate searchers. Every feature solves a real problem.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {features.map((feature, index) => (
+          <motion.div
+            key={index}
+            data-aos="zoom-in-up"
+            whileHover={{ scale: 1.03 }}
+            className="group relative overflow-hidden bg-gradient-to-br from-[#FDFBF7] to-white p-8 rounded-2xl border-2 border-gray-200 hover:border-transparent transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl"
+            onMouseEnter={() => setHoveredFeature(index)}
+            onMouseLeave={() => setHoveredFeature(null)}
+          >
+            <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+
+            <div className="relative z-10">
+              <div className={`inline-flex p-4 bg-gradient-to-br ${feature.color} rounded-2xl text-white mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                {feature.icon}
+              </div>
+
+              <h3 className="text-xl font-bold mb-4 group-hover:text-gray-800 transition-colors">
+                {feature.title}
+              </h3>
+
+              <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors">
+                {feature.description}
+              </p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+  );
+}import React from "react";
+import { MapPin, Phone, Mail, X, Facebook, Linkedin, Youtube } from "lucide-react";
+import emailjs from "emailjs-com";
+
+export default function ContactUs({ onClose }) {
+  const sendEmail = (e) => {
+    e.preventDefault();
+
+    emailjs
+      .sendForm(
+        "service_x9x3x5e",          // ✅ your service ID
+        "template_g1qck6c",         // ✅ your template ID
+        e.target,
+        "4D_p0Cy6YqcSa4sPU"     // 🔁 replace this with your actual public key
+      )
+      .then(
+        (result) => {
+          alert("✅ Message sent successfully!");
+          e.target.reset();
+          onClose();
+        },
+        (error) => {
+          console.error("❌ Error sending email:", error.text);
+          alert("Something went wrong. Please try again.");
+        }
+      );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="bg-white max-w-4xl w-full mx-4 md:mx-0 rounded-2xl shadow-2xl overflow-hidden relative animate-fade-in">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all duration-200 z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="grid md:grid-cols-2">
+          {/* Left - Form */}
+          <div className="p-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+            <h2 className="text-3xl font-bold text-slate-800 mb-6">Get In Touch</h2>
+            <form className="space-y-5" onSubmit={sendEmail}>
+              <input
+                type="text"
+                name="name"
+                placeholder="Your Name"
+                required
+                className="w-full p-4 border border-black rounded-xl bg-white/80 text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="youremail@mail.com"
+                required
+                className="w-full p-4 border border-black rounded-xl bg-white/80 text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
+              <textarea
+                name="message"
+                placeholder="Type your message..."
+                required
+                className="w-full p-4 h-32 border border-black rounded-xl bg-white/80 text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+              ></textarea>
+              <button
+                type="submit"
+                className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Send Message
+              </button>
+            </form>
+          </div>
+
+          {/* Right - Contact Info */}
+          <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 p-8 flex flex-col justify-center text-white">
+            <h3 className="text-3xl font-bold mb-4">Contact Information</h3>
+            <p className="text-slate-300 mb-8 text-lg leading-relaxed">
+              Have a question, want to connect, or work together?
+            </p>
+
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                <div className="bg-blue-500 p-3 rounded-full">
+                  <MapPin className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-slate-200 text-lg">Chicago, IL</span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="bg-green-500 p-3 rounded-full">
+                  <Phone className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-slate-200 text-lg">000-000-0000</span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="bg-purple-500 p-3 rounded-full">
+                  <Mail className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-slate-200 text-lg">cryptocodesace@gmail.com</span>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <div className="text-slate-300 mb-4 text-lg">Follow us on:</div>
+              <div className="flex space-x-4">
+                <div className="bg-blue-600 hover:bg-blue-700 p-3 rounded-full cursor-pointer transition-all duration-200 hover:scale-110">
+                  <Facebook className="w-5 h-5 text-white" />
+                </div>
+                <div className="bg-blue-700 hover:bg-blue-800 p-3 rounded-full cursor-pointer transition-all duration-200 hover:scale-110">
+                  <Linkedin className="w-5 h-5 text-white" />
+                </div>
+                <div className="bg-red-600 hover:bg-red-700 p-3 rounded-full cursor-pointer transition-all duration-200 hover:scale-110">
+                  <Youtube className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+import "aos/dist/aos.css";
+import {
+  guarantees,
+} from "./Data.tsx"; 
+
+export default function Guarantees(){
+    return(
+        <section className="px-6 py-20 bg-gradient-to-br from-[#E4DDD2] to-[#D6CFC4]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Our Commitment to You
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              We stand behind our platform with guarantees that put your success
+              first.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {guarantees.map((guarantee, index) => (
+              <div
+                key={index}
+                className="bg-white p-8 rounded-2xl shadow-lg text-center hover:shadow-xl transition-all duration-300"
+              >
+                <div className="mb-6">{guarantee.icon}</div>
+                <h3 className="text-xl font-bold mb-4">{guarantee.title}</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {guarantee.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+}
+import {
+  MapPin,
+  Shield,
+  MessageCircle,
+  Users,
+  Clock,
+} from "lucide-react";
+import "aos/dist/aos.css";
+
+
+export default function CTA() {
+  return (
+    <section className="px-6 py-20 text-center bg-white">
+    <div className="max-w-4xl mx-auto">
+      <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+        Find your people.
+        <br />
+        <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Land your apartment.
+        </span>
+      </h2>
+
+      <p className="text-xl md:text-2xl mb-10 text-gray-600 leading-relaxed">
+        Join 10,000+ verified users who've found their perfect living
+        situation.
+      </p>
+
+      <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+        <a
+          href="https://forms.gle/qJQXtqEgHb45Y2Y8A"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-2xl flex items-center justify-center"
+        >
+          Start Your Search Today
+          <Users className="ml-2 w-5 h-5 group-hover:rotate-12 transition-transform" />
+        </a>
+        <a
+          href="#map"
+          className="group border-2 bg-white border-black hover:bg-black hover:text-white px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+        >
+          Explore the Map
+          <MapPin className="ml-2 w-5 h-5 group-hover:bounce transition-transform" />
+        </a>
+      </div>
+
+      <div className="flex justify-center items-center space-x-8 text-sm text-gray-500">
+        <div className="flex items-center space-x-2">
+          <Shield className="w-4 h-4" />
+          <span>100% Verified</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Clock className="w-4 h-4" />
+          <span>Setup in 2 minutes</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <MessageCircle className="w-4 h-4" />
+          <span>Always Free</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  );
+}import React from "react";
+import {
+  MapPin,
+  ArrowRight,
+} from "lucide-react";
+
+import "aos/dist/aos.css";
+import { motion } from "framer-motion";
+
+
+export default function HeroSection(){
+    return(
+        <section id="home" className="scroll-mt-32 px-6 py-40 text-center bg-white min-h-screen flex items-center">
+        <div className="max-w-6xl mx-auto" data-aos="fade-up">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            Find your{" "}
+            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              vibe
+            </span>
+            .<br />
+            Find your{" "}
+            <span className="bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 bg-clip-text text-transparent">
+              space
+            </span>
+            .<br />
+            Find{" "}
+            <span className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
+              MyRoomie
+            </span>
+            .
+          </h1>
+
+          <p className="text-xl md:text-2xl mb-10 text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            The first roommate finder that's safe, real, and actually works.
+            Join thousands who've ditched fake profiles and broken filters for genuine connections.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+            <motion.a
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              href="https://forms.gle/qJQXtqEgHb45Y2Y8A"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 flex items-center justify-center"
+            >
+              Become a beta tester
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </motion.a>
+            <motion.a
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              href="#howitworks"
+              className="border-2 border-black hover:bg-black hover:text-white px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 flex items-center justify-center"
+            >
+              See How It Works
+              <MapPin className="ml-2 w-5 h-5" />
+            </motion.a>
+          </div>
+          <div id="map" className="scroll-mt-28 relative max-w-4xl mx-auto">
+            <div className="bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl p-8 backdrop-blur-sm border border-white/20 shadow-2xl">
+              <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    MyRoomie Map Demo
+                  </span>
+                </div>
+                <div className="h-64 bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 rounded-xl flex items-center justify-center">
+                  <div className="text-center">
+                    <MapPin className="w-16 h-16 mx-auto mb-4 text-blue-600" />
+                    <p className="text-gray-600 font-medium">
+                      Interactive map demo coming soon
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+}// src/components/Navbar.tsx
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { HashLink } from "react-router-hash-link";
+import { Home, TrendingUp, Star, Users, Clock, X } from "lucide-react";
+import "aos/dist/aos.css";
+import { motion } from "framer-motion";
+
+interface NavbarProps {
+  setIsOpen: (open: boolean) => void;
+}
+
+export default function Navbar({ setIsOpen }: NavbarProps) {
+  const [trustBarVisible, setTrustBarVisible] = useState(true);
+  const sections = ["Home", "Features", "How It Works"];
+
+  return (
+    <>
+      <header className="bg-white shadow-sm fixed top-0 left-0 w-full z-50">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Home className="w-6 h-6 text-black mr-2" />
+            <span className="text-xl font-bold text-gray-900">MyRoomie</span>
+          </div>
+
+          {/* Navigation */}
+          <nav>
+            <ul className="flex space-x-8 text-gray-700 items-center">
+              {sections.map((item) => {
+                const hash = item.replace(/\s+/g, "").toLowerCase();
+                return (
+                  <li key={hash}>
+                    <HashLink
+                      smooth
+                      to={`/#${hash}`}
+                      className="text-gray-700 hover:text-black font-medium"
+                    >
+                      {item}
+                    </HashLink>
+                  </li>
+                );
+              })}
+
+              {/* Blogs link now navigates to /blog */}
+              <li>
+                <Link
+                  to="/blog"
+                  className="text-gray-700 hover:text-black font-medium"
+                >
+                  Blogs
+                </Link>
+              </li>
+
+              {/* Contact button */}
+              <li>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setIsOpen(true)}
+                  className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg font-semibold hover:brightness-110 transition-all"
+                >
+                  Contact Us
+                </motion.button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </header>
+
+      {/* Trust bar */}
+      {trustBarVisible && (
+        <div className="fixed top-[72px] left-0 w-full bg-gradient-to-r from-blue-800 via-cyan-700 to-gray-800 text-white px-6 py-3 text-center z-40">
+          <div className="relative max-w-6xl mx-auto">
+            <div className="flex items-center justify-center space-x-8 text-sm">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4" />
+                <span>Our Goal</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Users className="w-4 h-4" />
+                <span>10,000+ verified users</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Star className="w-4 h-4" />
+                <span>4.9/5 rating</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4" />
+                <span>7-day avg. match time</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setTrustBarVisible(false)}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 hover:bg-white/20 rounded-full p-1 transition-colors"
+              aria-label="Close trust bar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Spacer for fixed header + trust bar */}
+      <div className={trustBarVisible ? "mt-[120px]" : "mt-[72px]"} />
+    </>
+  );
+}
+// src/components/Footer.tsx
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { HashLink } from 'react-router-hash-link';
+import {
+  Home,
+  MapPin,
+  Shield,
+  Users,
+  Mail,
+  Twitter,
+  Instagram,
+} from 'lucide-react';
+
+interface FooterProps {
+  setIsOpen: (open: boolean) => void;
+}
+
+export default function Footer({ setIsOpen }: FooterProps) {
+  return (
+    <footer className="bg-[#BFBFBF] text-gray-800">
+      {/* Top section with padding */}
+      <div className="px-6 py-16 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+        {/* Brand */}
+        <div className="md:col-span-1">
+          <Link to="/" className="flex items-center mb-4">
+            <Home className="w-6 h-6 mr-2 text-gray-900" />
+            <span className="text-2xl font-bold text-gray-900">MyRoomie</span>
+          </Link>
+          <p className="text-gray-600 mb-4 leading-relaxed">
+            The roommate finder that actually works. Safe, real, and free.
+          </p>
+          <div className="flex space-x-4">
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white hover:bg-gray-800 transition-colors"
+            >
+              f
+            </a>
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white hover:bg-gray-800 transition-colors"
+            >
+              t
+            </a>
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white hover:bg-gray-800 transition-colors"
+            >
+              in
+            </a>
+          </div>
+        </div>
+
+        {/* Product */}
+        <div>
+          <h5 className="font-bold mb-4 text-lg">Product</h5>
+          <ul className="space-y-3">
+            {[
+              { label: 'Features', to: '/#features' },
+              { label: 'How It Works', to: '/#howitworks' },
+              { label: 'Pricing', to: '/#pricing' },
+              { label: 'FAQs', to: '/#faqs' },
+            ].map(({ label, to }) => (
+              <li key={label}>
+                <HashLink
+                  smooth
+                  to={to}
+                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  {label}
+                </HashLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Trust & Safety */}
+        <div>
+          <h5 className="font-bold mb-4 text-lg">Trust &amp; Safety</h5>
+          <ul className="space-y-3">
+            {[
+              { label: 'Verification Tiers', to: '/#verificationtiers' },
+              { label: 'Community Guidelines', to: '/#communityguidelines' },
+              { label: 'Report a Profile', to: '/#reportaprofile' },
+              { label: 'Safety Tips', to: '/#safetytips' },
+            ].map(({ label, to }) => (
+              <li key={label}>
+                <HashLink
+                  smooth
+                  to={to}
+                  className="text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  {label}
+                </HashLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Company */}
+        <div>
+          <h5 className="font-bold mb-4 text-lg">Company</h5>
+          <ul className="space-y-3">
+            <li>
+              <button
+                onClick={() => setIsOpen(true)}
+                className="text-gray-700 hover:text-gray-900 font-medium transition-colors"
+              >
+                Contact Us
+              </button>
+            </li>
+            {[
+              { label: 'About Us', to: '/#aboutus', hash: true },
+              { label: 'Careers', to: '/careers' },
+              { label: 'Terms & Privacy', to: '/terms' },
+            ].map(({ label, to, hash }) => (
+              <li key={label}>
+                {hash ? (
+                  <HashLink
+                    smooth
+                    to={to}
+                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    {label}
+                  </HashLink>
+                ) : (
+                  <Link
+                    to={to}
+                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    {label}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Bottom copyright & policies */}
+      <div className="border-t border-gray-400 py-8">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center px-6">
+          <p className="text-gray-600 mb-4 md:mb-0">
+            © 2025 MyRoomie. All rights reserved.
+          </p>
+          <div className="flex space-x-6 text-sm">
+            <Link
+              to="/privacy"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              to="/terms"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Terms of Service
+            </Link>
+            <Link
+              to="/cookie-policy"
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Cookie Policy
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
