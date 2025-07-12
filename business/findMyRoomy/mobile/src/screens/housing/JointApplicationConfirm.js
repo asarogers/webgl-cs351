@@ -1,0 +1,1 @@
+// JointApplicationConfirm.js

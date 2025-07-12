@@ -1,0 +1,1 @@
+// SafetyTips.js

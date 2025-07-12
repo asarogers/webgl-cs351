@@ -1,0 +1,1 @@
+// EmptyAccountScreen.js

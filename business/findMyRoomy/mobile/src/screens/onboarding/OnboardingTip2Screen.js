@@ -1,0 +1,1 @@
+// OnboardingTip2Screen.js

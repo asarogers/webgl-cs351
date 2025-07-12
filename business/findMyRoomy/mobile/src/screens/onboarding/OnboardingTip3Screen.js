@@ -1,0 +1,1 @@
+// OnboardingTip3Screen.js
