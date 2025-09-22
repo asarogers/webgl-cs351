@@ -1,0 +1,12 @@
+@supabase/supabase-js
+dotenv
+expo-image-picker
+expo-document-picker
+expo-auth-session
+expo-image-manipulator
+expo-location
+expo-linear-gradient
+react-native-svg
+@ptomasroos/react-native-multi-slider
+@react-native-picker/picker\
+@react-native-community/datetimepicker
