@@ -1201,91 +1201,82 @@ class AuthService {
   ) {
     console.log("🔍 [uploadUserPhoto] ===== STARTING UPLOAD PROCESS =====");
     console.log("🔍 [uploadUserPhoto] File URI:", fileUri);
-    
+  
     try {
-      // FIX: Get current user properly
-      console.log("🔍 [uploadUserPhoto] STEP 1: Getting current user");
+      // 1) Get current user
       const user = await this._getCurrentUserOrThrow();
-      console.log("🔍 [uploadUserPhoto] User ID:", user.id);
-      
-      // Check Supabase client
-      console.log("🔍 [uploadUserPhoto] STEP 2: Checking Supabase client");
-      console.log("🔍 [uploadUserPhoto] Supabase client exists:", !!supabase);
-      console.log("🔍 [uploadUserPhoto] Supabase storage exists:", !!supabase.storage);
-      
-     
-    
-      
-      // Generate filename with correct user ID
+      console.log("🔍 User ID:", user.id);
+  
+      // 2) Build storage path
       const fileExt = fileUri.split(".").pop() || "jpg";
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`; // FIX: Use user.id instead of this.user?.id
-      console.log("🔍 [uploadUserPhoto] File path:", filePath);
-      
-      // Method 1: Direct ArrayBuffer upload (most reliable)
-      console.log("🔍 [uploadUserPhoto] STEP 4: Trying ArrayBuffer upload");
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+  
+      // 3) Upload to Supabase Storage
       const response = await fetch(fileUri);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
       const fileData = await response.arrayBuffer();
-      console.log("✅ [uploadUserPhoto] File data loaded, size:", fileData.byteLength);
-      
+  
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(filePath, fileData, {
-          contentType: contentType,
+          contentType,
           upsert: false,
         });
-      
-      if (error) {
-        console.error("❌ [uploadUserPhoto] Upload error:", error);
-        throw new Error(`Upload failed: ${error.message}`);
-      }
-      
-      console.log("✅ [uploadUserPhoto] Upload successful!");
-      console.log("🔍 [uploadUserPhoto] Upload data:", JSON.stringify(data, null, 2));
-      
-      // Generate URL
-      let publicUrl = null;
-      
-      if (makePublic) {
-        console.log("🔍 [uploadUserPhoto] Creating public URL");
-        const { data: urlData } = supabase.storage
-          .from("user-photos")
-          .getPublicUrl(filePath);
-        
-        publicUrl = urlData.publicUrl;
-        console.log("✅ [uploadUserPhoto] Public URL:", publicUrl);
-      } else {
-        console.log("🔍 [uploadUserPhoto] Creating signed URL");
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from("user-photos")
-          .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
   
-        if (signedUrlError) {
-          console.error("❌ [uploadUserPhoto] Signed URL error:", signedUrlError);
-          // Still return success since upload worked
-        } else {
-          publicUrl = signedUrlData.signedUrl;
-          console.log("✅ [uploadUserPhoto] Signed URL:", publicUrl);
+      if (error) throw new Error(`Upload failed: ${error.message}`);
+  
+      console.log("✅ Upload successful! Path:", filePath);
+  
+      // 4) Generate URL (public or signed)
+      let publicUrl: string | null = null;
+      if (makePublic) {
+        const { data: urlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(filePath);
+        publicUrl = urlData.publicUrl;
+      } else {
+        const { data: signedData, error: signedErr } = await supabase.storage
+          .from(bucket)
+          .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
+        if (!signedErr) {
+          publicUrl = signedData.signedUrl;
         }
       }
-      
-      const result = {
+  
+      // 5) Update user row in DB
+      const { data: userRow, error: readErr } = await supabase
+        .from("users")
+        .select("photos")
+        .eq("id", user.id)
+        .single();
+  
+      if (readErr) throw readErr;
+  
+      const currentPhotos = Array.isArray(userRow?.photos) ? userRow.photos : [];
+      const updatedPhotos = [...currentPhotos, filePath];
+  
+      const { error: updateErr } = await supabase
+        .from("users")
+        .update({
+          photos: updatedPhotos,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+  
+      if (updateErr) throw updateErr;
+  
+      // 6) Return both the storage path & usable URL
+      return {
         success: true,
-        error: null,
-        data: data,
-        url: publicUrl,
         path: filePath,
+        url: publicUrl,
+        photos: updatedPhotos,
       };
-      
-      console.log("🔍 [uploadUserPhoto] Final result:", JSON.stringify(result, null, 2));
-      return result;
-      
     } catch (error) {
-      console.error("❌ [uploadUserPhoto] FATAL ERROR:", error.message);
+      console.error("❌ [uploadUserPhoto] ERROR:", error.message);
       return {
         success: false,
         error: error.message,
@@ -1294,6 +1285,7 @@ class AuthService {
       };
     }
   }
+  
   
   // Helper method to handle successful uploads
   async handleUploadSuccess(data, filePath, bucket, makePublic) {
