@@ -385,7 +385,7 @@ class AuthService {
         .select(
           `
           id, first_name, last_name, email, avatarUri, initials, name, location,
-          about, interests, photos, strength,
+          about, interests, strength,
           substances, lifestyle, basics, pets, amenities,
           education, company, weekend_vibe, sleep_schedule, dish_washing, 
           friends_over, pet_situation, budget_min, budget_max,
@@ -443,13 +443,6 @@ class AuthService {
       dbFormat.interests = Array.isArray(profile.interests)
         ? profile.interests
         : [];
-    if (profile.photos !== undefined) {
-      dbFormat.photos = Array.isArray(profile.photos)
-        ? profile.photos
-            .map((p) => (typeof p === "string" ? p : p?.uri))
-            .filter(Boolean)
-        : [];
-    }
 
     // Substances
     if (profile.substances) {
@@ -1179,7 +1172,7 @@ class AuthService {
           `
   id,
   first_name, last_name, email,
-  about, interests, photos,
+  about, interests,
   education, company,
   weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
   budget_min, budget_max,
@@ -1214,12 +1207,11 @@ class AuthService {
     return user;
   }
 
+  
+
   async uploadUserPhoto(
     fileUri,
-    {
-      bucket = "user-photos",
-      contentType = "image/jpeg",
-    } = {}
+    { bucket = "user-photos", contentType = "image/jpeg" } = {}
   ) {
     try {
       const user = await this._getCurrentUserOrThrow();
@@ -1228,7 +1220,7 @@ class AuthService {
       const fileName = `${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`; // ✅ always a relative path
   
       // Upload file
       const response = await fetch(fileUri);
@@ -1237,21 +1229,18 @@ class AuthService {
   
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, fileData, {
-          contentType,
-          upsert: false,
-        });
+        .upload(filePath, fileData, { contentType, upsert: false });
   
       if (uploadError) throw uploadError;
   
-      // Generate public URL (no need for signed URLs anymore)
+      // Generate public URL (to return immediately for UI)
       const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath);
   
       const publicUrl = urlData.publicUrl;
   
-      // Update user row with file path
+      // Fetch current photos
       const { data: userRow, error: readErr } = await supabase
         .from("users")
         .select("photos")
@@ -1261,7 +1250,9 @@ class AuthService {
       if (readErr) throw readErr;
   
       const currentPhotos = Array.isArray(userRow?.photos) ? userRow.photos : [];
-      const updatedPhotos = [...currentPhotos, filePath];
+  
+      // ✅ store only relative paths, strip any accidental full URL
+      const updatedPhotos = [...currentPhotos, filePath.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")];
   
       const { error: updateErr } = await supabase
         .from("users")
@@ -1273,22 +1264,13 @@ class AuthService {
   
       if (updateErr) throw updateErr;
   
-      return {
-        success: true,
-        path: filePath,
-        url: publicUrl, // Never expires!
-        photos: updatedPhotos,
-      };
+      return { success: true, path: filePath, url: publicUrl, photos: updatedPhotos };
     } catch (error) {
       console.error("❌ [uploadUserPhoto] ERROR:", error.message);
-      return {
-        success: false,
-        error: error.message,
-        data: null,
-        url: null,
-      };
+      return { success: false, error: error.message, data: null, url: null };
     }
   }
+  
 
   async updateZip(newZip) {
     try {
@@ -1418,7 +1400,7 @@ class AuthService {
     try {
       const user = await this._getCurrentUserOrThrow();
   
-      // 1) Load paths from users.photos
+      // Load paths from users.photos
       const { data, error } = await supabase
         .from("users")
         .select("photos")
@@ -1427,32 +1409,34 @@ class AuthService {
   
       if (error) throw error;
   
-      const paths = Array.isArray(data?.photos) ? data.photos : [];
-      
+      let paths = Array.isArray(data?.photos) ? data.photos : [];
+  
       if (paths.length === 0) {
         return { success: true, photos: [], paths: [] };
       }
   
-      // 2) Generate public URLs (never expire)
-      const urls = paths.map(path => 
+      // ✅ Normalize: strip any full URL accidentally saved
+      paths = paths.map(p =>
+        p.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")
+      );
+  
+      // Generate public URLs
+      const urls = paths.map(path =>
         supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
       );
   
-      return { 
-        success: true, 
-        photos: urls, 
-        paths 
-      };
+      return { success: true, photos: urls, paths };
     } catch (err) {
       console.error("❌ getUserPhotos error:", err);
       return {
         success: false,
         error: err.message || "Fetch failed",
         photos: [],
-        paths: []
+        paths: [],
       };
     }
   }
+  
 }
 
 // === helpers (fix bug + align to your schema) ===

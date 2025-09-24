@@ -33,7 +33,6 @@ export const ImagePickerComponent = () => {
       try {
         const result = await authService.getUserPhotos({
           bucket: "user-photos",
-          signed: true, // signed URLs if private
         });
 
         if (result.success && result.paths) {
@@ -42,6 +41,9 @@ export const ImagePickerComponent = () => {
             url,
             path: result.paths[i], // keep correct storage path
           }));
+
+          console.log("image pickjer component", photoObjects)
+
 
           setPhotos(photoObjects);
           // console.log("📷 Loaded user photos:", photoObjects);
@@ -74,7 +76,6 @@ export const ImagePickerComponent = () => {
         // Upload to Supabase
         const uploadResult = await authService.uploadUserPhoto(asset.uri, {
           bucket: "user-photos",
-          makePublic: false,
           contentType: asset.mimeType || "image/jpeg",
         });
 

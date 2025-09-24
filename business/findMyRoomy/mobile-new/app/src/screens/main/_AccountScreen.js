@@ -135,71 +135,6 @@ const parseBudgetRangeLabel = (label) => {
   ];
 };
 
-const normalizeServerProfileToAccount = (srv) => {
-  if (!srv || typeof srv !== "object") return defaultProfile;
-
-  const photos = Array.isArray(srv.photos)
-    ? srv.photos
-        .map((p, i) => {
-          if (typeof p === "string") return { id: String(i), uri: p };
-          if (p && typeof p === "object" && p.uri)
-            return { id: p.id || String(i), uri: p.uri };
-          return null;
-        })
-        .filter(Boolean)
-    : [];
-
-  const budgetRange =
-    srv?.basics?.budget_range && Array.isArray(srv.basics.budget_range)
-      ? srv.basics.budget_range
-      : parseBudgetRangeLabel(srv?.housing?.budget);
-
-  console.log("srv", srv);
-
-  // Extract location_sharing from either the direct field or raw data
-  const locationSharing =
-    srv.location_sharing ??
-    srv.raw?.location_sharing ??
-    defaultProfile.location_sharing ??
-    false;
-
-  return {
-    ...defaultProfile,
-    avatarUri: srv.avatarUri ?? defaultProfile.avatarUri,
-    initials: srv.initials ?? defaultProfile.initials,
-    name: srv.name ?? defaultProfile.name,
-    location: srv.location || null, // only raw zipcode or null
-    rawZipcode: srv.rawZipcode || srv.raw?.zipcode || null,
-    about: srv.about ?? "",
-    interests: Array.isArray(srv.interests) ? srv.interests : [],
-    photos,
-    substances: { ...defaultProfile.substances, ...(srv.substances || {}) },
-    lifestyle: { ...defaultProfile.lifestyle, ...(srv.lifestyle || {}) },
-    basics: {
-      ...defaultProfile.basics,
-      budget_range: budgetRange,
-      move_in_timeline:
-        srv?.housing?.moveIn ??
-        srv?.basics?.move_in_timeline ??
-        defaultProfile.basics.move_in_timeline,
-      lease_duration:
-        srv?.housing?.lease ??
-        srv?.basics?.lease_duration ??
-        defaultProfile.basics.lease_duration,
-      room_type: srv?.basics?.room_type ?? defaultProfile.basics.room_type,
-      minimum_stay:
-        srv?.basics?.minimum_stay ?? defaultProfile.basics.minimum_stay,
-      maximum_stay:
-        srv?.basics?.maximum_stay ?? defaultProfile.basics.maximum_stay,
-    },
-    pets: { ...defaultProfile.pets, ...(srv.pets || {}) },
-    amenities: { ...defaultProfile.amenities, ...(srv.amenities || {}) },
-    strength:
-      typeof srv.strength === "number" ? srv.strength : defaultProfile.strength,
-    location_sharing: locationSharing,
-  };
-};
-
 /* ============================================================================
  * UPLOAD HELPERS
  * ========================================================================== */
@@ -230,46 +165,6 @@ const uploadAndGetUrl = async (uri) => {
     console.error("Upload error:", error);
     throw error; // Re-throw to be handled by caller
   }
-};
-
-const resolvePhotosIfNeeded = async (profile) => {
-  if (!profile || typeof profile !== "object") return profile;
-  const next = { ...profile };
-
-  try {
-    // Handle avatar upload
-    if (next.avatarUri && isLocalUri(next.avatarUri)) {
-      console.log("🖼️ Uploading avatar...");
-      next.avatarUri = await uploadAndGetUrl(next.avatarUri);
-    }
-
-    // Handle photo uploads
-    if (next.photos && Array.isArray(next.photos)) {
-      const uploadPromises = next.photos.map(async (p, index) => {
-        if (!p) return p;
-
-        if (typeof p === "string") {
-          return isLocalUri(p) ? await uploadAndGetUrl(p) : p;
-        }
-
-        if (p?.uri && isLocalUri(p.uri)) {
-          console.log(`📸 Uploading photo ${index + 1}...`);
-          const uploadedUri = await uploadAndGetUrl(p.uri);
-          return { ...p, uri: uploadedUri };
-        }
-
-        return p;
-      });
-
-      next.photos = await Promise.all(uploadPromises);
-      console.log("✅ All photo uploads completed");
-    }
-  } catch (error) {
-    console.error("Photo upload error:", error);
-    throw new Error(`Photo upload failed: ${error.message}`);
-  }
-
-  return next;
 };
 
 /* ============================================================================
@@ -306,8 +201,7 @@ const AccountScreen = () => {
 
         // ✅ Fetch Supabase photos for this user
         const photoRes = await authService.getUserPhotos({
-          signed: true,
-          expiresIn: 60 * 60, // 1h signed URL
+          signed: true
         });
 
         if (photoRes.success && photoRes.photos?.length > 0) {
@@ -322,6 +216,8 @@ const AccountScreen = () => {
             photos: mapped,
           };
         }
+
+        // console.log("came from load", profileData)
 
         setProfile(profileData);
 
@@ -392,8 +288,7 @@ const AccountScreen = () => {
       setSaving(true);
       setError(null);
 
-      const readyProfile = await resolvePhotosIfNeeded(updatedProfile);
-      const res = await authService.updateAccountProfileFromUI(readyProfile);
+      const res = await authService.updateAccountProfileFromUI(updatedProfile);
 
       if (!res?.success) {
         throw new Error(res?.error || "Failed to save");
@@ -409,7 +304,7 @@ const AccountScreen = () => {
   };
 
   const updateProfile = (updater) => {
-    console.log("callled");
+    // console.log("callled");
     setDirty(true);
     setProfile((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;

@@ -287,7 +287,6 @@ const AccountScreen = () => {
 
   const [editing, setEditing] = useState({
     profile: false,
-    photos: false,
     about: false,
     interests: false,
     substances: false,
@@ -393,9 +392,7 @@ const AccountScreen = () => {
     try {
       setSaving(true);
       setError(null);
-
-      const readyProfile = await resolvePhotosIfNeeded(updatedProfile);
-      const res = await authService.updateAccountProfileFromUI(readyProfile);
+      const res = await authService.updateAccountProfileFromUI(updatedProfile);
       
       if (!res?.success) {
         throw new Error(res?.error || "Failed to save");
@@ -412,7 +409,7 @@ const AccountScreen = () => {
   };
 
   const updateProfile = (updater) => {
-    console.log("callled")
+    // console.log("callled")
     setDirty(true)
     setProfile((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;

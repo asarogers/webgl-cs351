@@ -67,7 +67,7 @@ export async function getZipCode() {
 
 export async function setUseAuto(value) {
   await AsyncStorage.setItem(USE_AUTO_KEY, JSON.stringify(value));
-  console.log("set useAuto:", value);
+//   console.log("set useAuto:", value);
 }
 
 export async function getUseAuto() {
