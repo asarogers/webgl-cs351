@@ -18,9 +18,17 @@ import authService from "@/database/authService";
 const MAX_PHOTOS = 6;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-export const ImagePickerComponent = () => {
-  type Photo = { url: string; path: string };
+type Photo = { url: string; path: string };
+type Props = {
+  editing?: boolean;
+  profile?: any;
+  toggleEdit?: () => void;
+  onPhotosChange?: (photos: Photo[]) => void;
+};
 
+export const ImagePickerComponent: React.FC<Props> = ({
+  onPhotosChange,
+}) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -31,22 +39,22 @@ export const ImagePickerComponent = () => {
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const result = await authService.getUserPhotos({
-          bucket: "user-photos",
-        });
-
+        console.log("🔍 ImagePickerComponent: fetching photos...");
+        
+        const result = await authService.getUserPhotos({ bucket: "user-photos" });
+        console.log("🔍 getUserPhotos result:", result);
+  
         if (result.success && result.paths) {
-          // Build array of { url, path }
           const photoObjects = result.photos.map((url, i) => ({
-            url,
-            path: result.paths[i], // keep correct storage path
+            id: String(i),
+            url: url,
+            path: result.paths[i],
           }));
-
-          console.log("image pickjer component", photoObjects)
-
-
+          
+          console.log("🔍 ImagePickerComponent: mapped photoObjects:", photoObjects);
+          
           setPhotos(photoObjects);
-          // console.log("📷 Loaded user photos:", photoObjects);
+          onPhotosChange?.(photoObjects);
         } else {
           console.error("❌ Failed to fetch photos:", result.error);
         }
@@ -54,40 +62,44 @@ export const ImagePickerComponent = () => {
         console.error("❌ Error loading photos:", error);
       }
     };
-
+  
     fetchPhotos();
   }, []);
+
+  // ✅ Sync to parent whenever photos changes
+  useEffect(() => {
+    console.log("changed", photos)
+    onPhotosChange?.(photos);
+  }, [photos]);
 
   const addPhoto = async () => {
     try {
       setIsUploading(true);
-      
-      let result = await ImagePicker.launchImageLibraryAsync({
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
       });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+  
+      if (!result.canceled && result.assets?.length > 0) {
         const asset = result.assets[0];
-        // console.log("Selected asset:", asset);
-
-        // Upload to Supabase
         const uploadResult = await authService.uploadUserPhoto(asset.uri, {
           bucket: "user-photos",
           contentType: asset.mimeType || "image/jpeg",
         });
+        const SUPABASE_STORAGE_URL = "https://viscgyefdktuymldptuz.supabase.co/storage/v1/object/public/user-photos/";
 
-        // console.log("Upload result:", uploadResult);
-
+  
         if (uploadResult.success && uploadResult.url) {
-          const url = uploadResult.url!;
-          setPhotos((prev) => [
-            ...prev,
-            { url, path: uploadResult.path },
-          ]); // ✅ add uploaded photo
-          // console.log("✅ Photo added to UI with URL:", url);
+          const newPhoto = { 
+            id: String(photos.length),
+            url: uploadResult.url,
+            path: uploadResult.path || uploadResult.url.replace(SUPABASE_STORAGE_URL, '')
+          };
+          
+          setPhotos((prev) => [...prev, newPhoto]);
+          console.log("🔍 Added new photo:", newPhoto);
         } else {
           console.error("❌ Upload failed:", uploadResult.error);
         }
@@ -103,16 +115,10 @@ export const ImagePickerComponent = () => {
     try {
       setDeletingIndex(index);
       const photoToDelete = photos[index];
-
-      // console.log("🗑️ Deleting photo:", photoToDelete);
-
-      const deleteResult = await authService.deleteUserPhoto(
-        photoToDelete.path
-      );
+      const deleteResult = await authService.deleteUserPhoto(photoToDelete.path);
 
       if (deleteResult.success) {
         setPhotos((prev) => prev.filter((_, i) => i !== index));
-        // console.log("✅ Photo deleted successfully");
       } else {
         console.error("❌ Delete failed:", deleteResult.error);
       }
@@ -123,17 +129,15 @@ export const ImagePickerComponent = () => {
     }
   };
 
-  const handleImageLoadStart = (index: number) => {
-    setLoadingImages(prev => new Set([...prev, index]));
-  };
+  const handleImageLoadStart = (index: number) =>
+    setLoadingImages((prev) => new Set([...prev, index]));
 
-  const handleImageLoadEnd = (index: number) => {
-    setLoadingImages(prev => {
+  const handleImageLoadEnd = (index: number) =>
+    setLoadingImages((prev) => {
       const newSet = new Set([...prev]);
       newSet.delete(index);
       return newSet;
     });
-  };
 
   return (
     <View style={styles.container}>
@@ -141,34 +145,28 @@ export const ImagePickerComponent = () => {
         {photos.map((photo, index) => (
           <View key={index} style={styles.photoBox}>
             <Pressable onLongPress={() => setSelectedPhoto(photo.url)}>
-              <Image 
-                source={{ uri: photo.url }} 
+              <Image
+                source={{ uri: photo.url }}
                 style={styles.photoImage}
                 onLoadStart={() => handleImageLoadStart(index)}
                 onLoadEnd={() => handleImageLoadEnd(index)}
                 onError={() => handleImageLoadEnd(index)}
               />
-              
-              {/* Image Loading Indicator */}
               {loadingImages.has(index) && (
                 <View style={styles.imageLoadingOverlay}>
                   <ActivityIndicator size="small" color="#007AFF" />
                 </View>
               )}
-              
-              {/* Delete Loading Overlay */}
               {deletingIndex === index && (
                 <View style={styles.deleteLoadingOverlay}>
                   <ActivityIndicator size="small" color="#fff" />
                 </View>
               )}
             </Pressable>
-
-            {/* Remove button - disabled during delete */}
             <TouchableOpacity
               style={[
                 styles.removeButton,
-                deletingIndex === index && styles.removeButtonDisabled
+                deletingIndex === index && styles.removeButtonDisabled,
               ]}
               onPress={() => removePhoto(index)}
               disabled={deletingIndex === index}
@@ -181,14 +179,12 @@ export const ImagePickerComponent = () => {
             </TouchableOpacity>
           </View>
         ))}
-
-        {/* Add Photo Button */}
         {photos.length < MAX_PHOTOS && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.addPhotoButton,
-              isUploading && styles.addPhotoButtonDisabled
-            ]} 
+              isUploading && styles.addPhotoButtonDisabled,
+            ]}
             onPress={addPhoto}
             disabled={isUploading}
           >
@@ -206,8 +202,6 @@ export const ImagePickerComponent = () => {
           </TouchableOpacity>
         )}
       </ScrollView>
-
-      {/* Modal for enlarged photo */}
       <Modal visible={!!selectedPhoto} transparent animationType="fade">
         <View style={styles.modalBackground}>
           <Pressable
@@ -222,8 +216,6 @@ export const ImagePickerComponent = () => {
               />
             )}
           </Pressable>
-
-          {/* Close button */}
           <TouchableOpacity
             style={styles.modalCloseButton}
             onPress={() => setSelectedPhoto(null)}
@@ -237,18 +229,9 @@ export const ImagePickerComponent = () => {
 };
 
 const BOX_SIZE = (SCREEN_WIDTH - 20 * 3 - 12 * 2) / 3;
-
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#F5F5F5",
-    flex: 1,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-  },
+  container: { padding: 20, backgroundColor: "#F5F5F5", flex: 1 },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-start" },
   photoBox: {
     width: BOX_SIZE,
     height: BOX_SIZE,
@@ -258,10 +241,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E5E5",
     position: "relative",
   },
-  photoImage: {
-    width: "100%",
-    height: "100%",
-  },
+  photoImage: { width: "100%", height: "100%" },
   removeButton: {
     position: "absolute",
     top: 2,
@@ -275,9 +255,7 @@ const styles = StyleSheet.create({
     minWidth: 24,
     minHeight: 24,
   },
-  removeButtonDisabled: {
-    backgroundColor: "rgba(255, 0, 0, 0.5)",
-  },
+  removeButtonDisabled: { backgroundColor: "rgba(255, 0, 0, 0.5)" },
   addPhotoButton: {
     width: BOX_SIZE,
     height: BOX_SIZE,
@@ -328,10 +306,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  fullImage: {
-    width: "90%",
-    height: "70%",
-  },
+  fullImage: { width: "90%", height: "70%" },
   modalCloseButton: {
     position: "absolute",
     top: 40,

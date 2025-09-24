@@ -35,8 +35,16 @@ export function Hero({
   profileStrengthDots,
 }) {
   // Always take first photo as avatar
-  const firstPhoto = profile.photos?.[0]?.uri;
+  const firstPhoto = profile.photos?.[0]?.url;
+
+  console.log("🔍 Hero: profile.photos:", profile.photos);
+  console.log("🔍 Hero: firstPhoto:", firstPhoto);
+
   const [zip, setZip] = useState(null);
+
+  useEffect(()=>{
+    console.log("working here", profile)
+  }, [profile])
   useEffect(() => {
     let isMounted = true; // prevent state update after unmount
 
@@ -127,6 +135,7 @@ export function Hero({
                 <Switch
                   value={profile.location_sharing}
                   onValueChange={async (enabled) => {
+                    console.log("inside the  show location", profile)
                     if (Platform.OS === "ios") {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     }

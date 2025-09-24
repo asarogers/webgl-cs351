@@ -287,13 +287,17 @@ const AccountScreen = () => {
     try {
       setSaving(true);
       setError(null);
-
+  
+      console.log("🔍 saveProfile: saving profile with photos:", updatedProfile.photos);
+    
       const res = await authService.updateAccountProfileFromUI(updatedProfile);
-
+  
       if (!res?.success) {
         throw new Error(res?.error || "Failed to save");
       }
 
+      console.log("🔍 saveProfile: received back from server:", res.profile?.photos);
+  
       setProfile(res.profile);
       setDirty(false);
     } catch (e) {
@@ -565,13 +569,18 @@ const AccountScreen = () => {
           profileStrengthDots={profileStrengthDots}
         />
         <ImagePickerComponent
-          editing={editing}
-          profile={profile}
-          toggleEdit={toggleEdit}
-          onPhotosChange={(photos) => {
-            updateProfile((p) => ({ ...p, photos }));
-          }}
-        />
+  editing={editing}
+  profile={profile}
+  toggleEdit={toggleEdit}
+  onPhotosChange={(photos) => {
+    console.log("🔍 AccountScreen: onPhotosChange called with:", photos);
+    updateProfile((p) => {
+      const updated = { ...p, photos };
+      console.log("🔍 AccountScreen: updating profile photos to:", updated.photos);
+      return updated;
+    });
+  }}
+/>
 
         {/*
         <AboutSection

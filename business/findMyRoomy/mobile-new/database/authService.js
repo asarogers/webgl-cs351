@@ -341,7 +341,6 @@ class AuthService {
     }
   }
 
-
   async getProfileVisibility() {
     try {
       const {
@@ -1043,6 +1042,62 @@ class AuthService {
   }
 
   // Updated updateUserProfile method
+
+  async resendEmailVerification(email) {
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error("Resend Email Verification Error:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to resend verification email",
+      };
+    }
+  }
+
+  async updateZip(newZip) {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("No authenticated user");
+
+      // Ensure we only allow numeric zips (basic validation)
+      const sanitizedZip = String(newZip).replace(/\D/g, "").slice(0, 10);
+
+      if (!sanitizedZip) {
+        throw new Error("Invalid zipcode provided");
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .update({
+          zipcode: sanitizedZip,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select("id, zipcode")
+        .single();
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        zipcode: data.zipcode,
+      };
+    } catch (err) {
+      console.error("updateZip Error:", err);
+      return {
+        success: false,
+        error: err.message || "Failed to update zipcode",
+      };
+    }
+  }
+
   async updateUserProfile(updates) {
     try {
       const {
@@ -1069,20 +1124,6 @@ class AuthService {
       return {
         success: false,
         error: error.message || "Failed to update profile",
-      };
-    }
-  }
-
-  async resendEmailVerification(email) {
-    try {
-      const { error } = await supabase.auth.resend({ type: "signup", email });
-      if (error) throw error;
-      return { success: true };
-    } catch (error) {
-      console.error("Resend Email Verification Error:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to resend verification email",
       };
     }
   }
@@ -1136,7 +1177,6 @@ class AuthService {
       } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("No authenticated user");
-      // console.log("incoming ui", uiProfile);
 
       const updates = {};
 
@@ -1149,39 +1189,51 @@ class AuthService {
 
       // Build updates from helper
       const dbUpdates = uiProfileToDbUpdates(uiProfile);
+
+      // ✅ FIXED: Handle photos properly
+      if (uiProfile.photos && Array.isArray(uiProfile.photos)) {
+        dbUpdates.photos = uiProfile.photos.map((p) => {
+          // If it's already a path/string, use it
+          if (typeof p === "string") return p;
+          // If it has a path property, use that
+          if (p.path) return p.path;
+          // If it has id but no path, use the id
+          if (p.id) return p.id;
+          // Fallback to the whole object
+          return p;
+        });
+      }
+
       Object.entries(dbUpdates).forEach(([key, value]) => {
         if (value !== undefined) updates[key] = value;
       });
 
       updates.updated_at = new Date().toISOString();
 
-      // Step 1: Perform update (don’t care about returned cols here)
+      // Step 1: Perform update
       const { error: updateError } = await supabase
         .from("users")
         .update(updates)
         .eq("id", user.id);
-
       if (updateError) throw updateError;
 
       // Step 2: Fetch the full record after update
-      // Step 2: Fetch the full record after update
-      // Step 2: Fetch the full record after update
+      // ✅ FIXED: Include "photos" in the SELECT query
       const { data: fullData, error: fetchError } = await supabase
         .from("users")
         .select(
           `
-  id,
-  first_name, last_name, email,
-  about, interests,
-  education, company,
-  weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
-  budget_min, budget_max,
-  move_in_selection, lease_duration, zone_drawn, location_sharing, zipcode
-`
+          id,
+          first_name, last_name, email,
+          about, interests, photos,
+          education, company,
+          weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
+          budget_min, budget_max,
+          move_in_selection, lease_duration, zone_drawn, location_sharing, zipcode
+        `
         )
         .eq("id", user.id)
         .single();
-
       if (fetchError) throw fetchError;
 
       return {
@@ -1207,53 +1259,60 @@ class AuthService {
     return user;
   }
 
-  
-
   async uploadUserPhoto(
     fileUri,
     { bucket = "user-photos", contentType = "image/jpeg" } = {}
   ) {
     try {
       const user = await this._getCurrentUserOrThrow();
-  
+
       const fileExt = fileUri.split(".").pop() || "jpg";
       const fileName = `${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`; // ✅ always a relative path
-  
+
       // Upload file
       const response = await fetch(fileUri);
-      if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Failed to fetch file: ${response.status}`);
       const fileData = await response.arrayBuffer();
-  
+
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, fileData, { contentType, upsert: false });
-  
+
       if (uploadError) throw uploadError;
-  
+
       // Generate public URL (to return immediately for UI)
       const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath);
-  
+
       const publicUrl = urlData.publicUrl;
-  
+
       // Fetch current photos
       const { data: userRow, error: readErr } = await supabase
         .from("users")
         .select("photos")
         .eq("id", user.id)
         .single();
-  
+
       if (readErr) throw readErr;
-  
-      const currentPhotos = Array.isArray(userRow?.photos) ? userRow.photos : [];
-  
+
+      const currentPhotos = Array.isArray(userRow?.photos)
+        ? userRow.photos
+        : [];
+
       // ✅ store only relative paths, strip any accidental full URL
-      const updatedPhotos = [...currentPhotos, filePath.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")];
-  
+      const updatedPhotos = [
+        ...currentPhotos,
+        filePath.replace(
+          /^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//,
+          ""
+        ),
+      ];
+
       const { error: updateErr } = await supabase
         .from("users")
         .update({
@@ -1261,59 +1320,23 @@ class AuthService {
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
-  
+
       if (updateErr) throw updateErr;
-  
-      return { success: true, path: filePath, url: publicUrl, photos: updatedPhotos };
+
+      return {
+        success: true,
+        path: filePath,
+        url: publicUrl,
+        photos: updatedPhotos,
+      };
     } catch (error) {
       console.error("❌ [uploadUserPhoto] ERROR:", error.message);
       return { success: false, error: error.message, data: null, url: null };
     }
   }
-  
 
-  async updateZip(newZip) {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) throw new Error("No authenticated user");
-  
-      // Ensure we only allow numeric zips (basic validation)
-      const sanitizedZip = String(newZip).replace(/\D/g, "").slice(0, 10);
-  
-      if (!sanitizedZip) {
-        throw new Error("Invalid zipcode provided");
-      }
-  
-      const { data, error } = await supabase
-        .from("users")
-        .update({
-          zipcode: sanitizedZip,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-        .select("id, zipcode")
-        .single();
-  
-      if (error) throw error;
-  
-      return {
-        success: true,
-        zipcode: data.zipcode,
-      };
-    } catch (err) {
-      console.error("updateZip Error:", err);
-      return {
-        success: false,
-        error: err.message || "Failed to update zipcode",
-      };
-    }
-  }
-  
-  
+
+
   // Simplified helper - no need for signed URL logic
   async handleUploadSuccess(data, filePath, bucket) {
     try {
@@ -1321,9 +1344,9 @@ class AuthService {
       const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath);
-      
+
       const publicUrl = urlData.publicUrl;
-      
+
       return {
         success: true,
         error: null,
@@ -1342,35 +1365,37 @@ class AuthService {
       };
     }
   }
-  
+
   async deleteUserPhoto(photoPath, { bucket = "user-photos" } = {}) {
     try {
       const user = await this._getCurrentUserOrThrow();
-  
+
       // 1) Get current photos array
       const { data: userRow, error: readErr } = await supabase
         .from("users")
         .select("photos")
         .eq("id", user.id)
         .single();
-  
+
       if (readErr) throw readErr;
-  
-      const currentPhotos = Array.isArray(userRow?.photos) ? userRow.photos : [];
-      
+
+      const currentPhotos = Array.isArray(userRow?.photos)
+        ? userRow.photos
+        : [];
+
       // 2) Remove from storage
       const { error: deleteError } = await supabase.storage
         .from(bucket)
         .remove([photoPath]);
-  
+
       // Don't throw on storage delete errors - file might already be gone
       if (deleteError) {
         console.warn("⚠️ Storage deletion warning:", deleteError.message);
       }
-  
+
       // 3) Always update database (even if storage delete failed)
-      const updatedPhotos = currentPhotos.filter(path => path !== photoPath);
-      
+      const updatedPhotos = currentPhotos.filter((path) => path !== photoPath);
+
       const { error: updateErr } = await supabase
         .from("users")
         .update({
@@ -1378,13 +1403,13 @@ class AuthService {
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
-  
+
       if (updateErr) throw updateErr;
-  
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         photos: updatedPhotos,
-        storageDeleted: !deleteError
+        storageDeleted: !deleteError,
       };
     } catch (err) {
       console.error("❌ deleteUserPhoto error:", err);
@@ -1394,37 +1419,38 @@ class AuthService {
       };
     }
   }
-  
+
   // Simplified getUserPhotos - no expiration concerns!
   async getUserPhotos({ bucket = "user-photos" } = {}) {
     try {
       const user = await this._getCurrentUserOrThrow();
-  
+
       // Load paths from users.photos
       const { data, error } = await supabase
         .from("users")
         .select("photos")
         .eq("id", user.id)
         .single();
-  
+
       if (error) throw error;
-  
+
       let paths = Array.isArray(data?.photos) ? data.photos : [];
-  
+
       if (paths.length === 0) {
         return { success: true, photos: [], paths: [] };
       }
-  
+
       // ✅ Normalize: strip any full URL accidentally saved
-      paths = paths.map(p =>
+      paths = paths.map((p) =>
         p.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")
       );
-  
+
       // Generate public URLs
-      const urls = paths.map(path =>
-        supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+      const urls = paths.map(
+        (path) =>
+          supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
       );
-  
+
       return { success: true, photos: urls, paths };
     } catch (err) {
       console.error("❌ getUserPhotos error:", err);
@@ -1436,7 +1462,6 @@ class AuthService {
       };
     }
   }
-  
 }
 
 // === helpers (fix bug + align to your schema) ===
@@ -1471,17 +1496,7 @@ const parseBudgetRange = (label) => {
   return { min: null, max: null };
 };
 
-const normalizePhotos = (raw) => {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((p, i) => {
-      if (typeof p === "string") return { id: String(i), uri: p };
-      if (p && typeof p === "object" && p.uri)
-        return { id: p.id || String(i), uri: p.uri };
-      return null;
-    })
-    .filter(Boolean);
-};
+
 
 function computeProfileStrength(row) {
   const checks = [
@@ -1505,11 +1520,195 @@ const drinksFromWeekendVibe = (v) => {
   return ["party", "bar", "drinks", "nightlife"].some((k) => s.includes(k));
 };
 
+const SUPABASE_STORAGE_URL = "https://viscgyefdktuymldptuz.supabase.co/storage/v1/object/public/user-photos/";
 
+const normalizePhotos = (raw) => {
+  console.log("🔍 normalizePhotos input:", raw);
+  
+  if (!Array.isArray(raw)) {
+    console.log("❌ normalizePhotos: input not array");
+    return [];
+  }
+  
+  const result = raw
+    .map((p, i) => {
+      if (typeof p === "string") {
+        // Check if it's already a full URL
+        if (p.startsWith('http')) {
+          // Extract the path from the full URL for storage
+          const path = p.replace(SUPABASE_STORAGE_URL, '');
+          console.log(`✅ normalizePhotos[${i}]: URL string "${p}" -> {id: ${i}, url: ${p}, path: ${path}}`);
+          return { id: String(i), url: p, path };
+        } else {
+          // It's a path, construct the full URL
+          const url = `${SUPABASE_STORAGE_URL}${p}`;
+          console.log(`✅ normalizePhotos[${i}]: path string "${p}" -> {id: ${i}, url: ${url}, path: ${p}}`);
+          return { id: String(i), url, path: p };
+        }
+      }
+      
+      if (p && typeof p === "object") {
+        const url = p.url || p.uri;
+        if (url) {
+          // Ensure URL is complete
+          const fullUrl = url.startsWith('http') ? url : `${SUPABASE_STORAGE_URL}${url}`;
+          // Use existing path or extract from URL
+          const path = p.path || (fullUrl.startsWith(SUPABASE_STORAGE_URL) ? fullUrl.replace(SUPABASE_STORAGE_URL, '') : url);
+          console.log(`✅ normalizePhotos[${i}]: object -> {id: ${p.id || i}, url: ${fullUrl}, path: ${path}}`);
+          return { 
+            id: p.id || String(i), 
+            url: fullUrl,
+            path: path
+          };
+        } else {
+          console.log(`❌ normalizePhotos[${i}]: object has no url/uri:`, p);
+        }
+      } else {
+        console.log(`❌ normalizePhotos[${i}]: invalid item:`, p);
+      }
+      return null;
+    })
+    .filter(Boolean);
+  
+  console.log("🔍 normalizePhotos output:", result);
+  return result;
+};
 
+function uiProfileToDbUpdates(ui) {
+  const updates = {};
+
+  if ("about" in ui) updates.about = ui.about ?? null;
+  if ("interests" in ui)
+    updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
+    
+  // ✅ FIXED: Store the actual file path, not the ID or full URL
+  if ("photos" in ui) {
+    console.log("🔍 uiProfileToDbUpdates photos input:", ui.photos);
+    
+    updates.photos = Array.isArray(ui.photos)
+      ? ui.photos
+          .map((p, i) => {
+            if (typeof p === "string") {
+              // If it's a full URL, extract the path
+              if (p.startsWith(SUPABASE_STORAGE_URL)) {
+                const path = p.replace(SUPABASE_STORAGE_URL, '');
+                console.log(`✅ uiProfileToDbUpdates[${i}]: URL string -> ${path}`);
+                return path;
+              }
+              // If it's already a path, use it
+              console.log(`✅ uiProfileToDbUpdates[${i}]: path string -> ${p}`);
+              return p;
+            }
+            
+            // ✅ FIXED: Use 'path' property, fallback to extracting from URL
+            if (p && typeof p === "object") {
+              if (p.path) {
+                console.log(`✅ uiProfileToDbUpdates[${i}]: object with path -> ${p.path}`);
+                return p.path;
+              } else if (p.url) {
+                const path = p.url.startsWith(SUPABASE_STORAGE_URL) 
+                  ? p.url.replace(SUPABASE_STORAGE_URL, '')
+                  : p.url;
+                console.log(`✅ uiProfileToDbUpdates[${i}]: object with URL -> ${path} (extracted from ${p.url})`);
+                return path;
+              } else if (p.uri) {
+                const path = p.uri.startsWith(SUPABASE_STORAGE_URL) 
+                  ? p.uri.replace(SUPABASE_STORAGE_URL, '')
+                  : p.uri;
+                console.log(`✅ uiProfileToDbUpdates[${i}]: object with URI -> ${path} (extracted from ${p.uri})`);
+                return path;
+              }
+            }
+            
+            console.log(`❌ uiProfileToDbUpdates[${i}]: invalid photo object:`, p);
+            return null;
+          })
+          .filter(Boolean)
+      : undefined;
+    
+    console.log("🔍 uiProfileToDbUpdates photos output:", updates.photos);
+  }
+
+  if (ui.lifestyle) {
+    if ("drinks" in ui.lifestyle)
+      updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
+    if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
+      updates.pet_situation = ui.lifestyle.dogOwner
+        ? "dog"
+        : ui.lifestyle.petFriendly
+        ? "small_pet"
+        : "none";
+    }
+  }
+
+  if (ui.housing) {
+    if ("budget" in ui.housing) {
+      const { min, max } = parseBudgetRange(ui.housing.budget);
+      updates.budget_min = min;
+      updates.budget_max = max;
+    }
+    if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
+    if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
+    if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
+  }
+
+  if (ui.basic) {
+    if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
+    if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
+  }
+  
+  if ("location_sharing" in ui) {
+    updates.location_sharing = ui.location_sharing;
+  }
+
+  if ("location" in ui) {
+    updates.zipcode = ui.location?.replace("ZIP ", "") || null;
+  }
+
+  return updates;
+}
+
+// ✅ Helper function to ensure photo objects have both URL and path
+function ensurePhotoConsistency(photos) {
+  return photos.map((photo, i) => {
+    if (typeof photo === "string") {
+      if (photo.startsWith('http')) {
+        return {
+          id: String(i),
+          url: photo,
+          path: photo.replace(SUPABASE_STORAGE_URL, '')
+        };
+      } else {
+        return {
+          id: String(i),
+          url: `${SUPABASE_STORAGE_URL}${photo}`,
+          path: photo
+        };
+      }
+    }
+    
+    // Ensure both url and path exist
+    let url = photo.url || photo.uri;
+    let path = photo.path;
+    
+    if (!url && path) {
+      url = path.startsWith('http') ? path : `${SUPABASE_STORAGE_URL}${path}`;
+    }
+    
+    if (!path && url) {
+      path = url.startsWith(SUPABASE_STORAGE_URL) ? url.replace(SUPABASE_STORAGE_URL, '') : url;
+    }
+    
+    return {
+      id: photo.id || String(i),
+      url,
+      path
+    };
+  });
+}
 // pet_situation: "dog", "small_pet", "none", ...
 function dbUserToUiProfile(row) {
-  // console.log("row from database", row);
+  console.log("row from database", row);
   const fullName =
     [row?.first_name?.trim(), row?.last_name?.trim()]
       .filter(Boolean)
@@ -1522,6 +1721,27 @@ function dbUserToUiProfile(row) {
 
   // ✅ define zipcode once
   const zipcode = row?.zipcode || null;
+
+  // if ("photos" in ui) {
+  //   console.log("🔍 uiProfileToDbUpdates photos input:", ui.photos);
+    
+  //   updates.photos = Array.isArray(ui.photos)
+  //     ? ui.photos
+  //         .map((p, i) => {
+  //           if (typeof p === "string") {
+  //             console.log(`✅ uiProfileToDbUpdates[${i}]: string -> ${p}`);
+  //             return p;
+  //           }
+  //           const url = p?.url || p?.uri;
+  //           console.log(`✅ uiProfileToDbUpdates[${i}]: object -> ${url} (from`, p, ')');
+  //           return url;
+  //         })
+  //         .filter(Boolean)
+  //     : undefined;
+    
+  //   console.log("🔍 uiProfileToDbUpdates photos output:", updates.photos);
+  // }
+  
 
   return {
     avatarUri: null,
@@ -1552,68 +1772,70 @@ function dbUserToUiProfile(row) {
       company: row?.company || "",
     },
 
+    
+
     photos: normalizePhotos(row?.photos),
     strength: computeProfileStrength(row),
   };
 }
 
-function uiProfileToDbUpdates(ui) {
-  const updates = {};
-  // console.log("backend ", ui);
+// function uiProfileToDbUpdates(ui) {
+//   const updates = {};
+//   // console.log("backend ", ui);
 
-  if ("about" in ui) updates.about = ui.about ?? null;
-  if ("interests" in ui)
-    updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
-  if ("photos" in ui) {
-    updates.photos = Array.isArray(ui.photos)
-      ? ui.photos
-          .map((p) => (typeof p === "string" ? p : p?.uri))
-          .filter(Boolean)
-      : undefined;
-  }
+//   if ("about" in ui) updates.about = ui.about ?? null;
+//   if ("interests" in ui)
+//     updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
+//   if ("photos" in ui) {
+//     updates.photos = Array.isArray(ui.photos)
+//       ? ui.photos
+//           .map((p) => (typeof p === "string" ? p : p?.uri))
+//           .filter(Boolean)
+//       : undefined;
+//   }
 
-  if (ui.lifestyle) {
-    if ("drinks" in ui.lifestyle)
-      updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
-    if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
-      updates.pet_situation = ui.lifestyle.dogOwner
-        ? "dog"
-        : ui.lifestyle.petFriendly
-        ? "small_pet"
-        : "none";
-    }
-  }
+//   if (ui.lifestyle) {
+//     if ("drinks" in ui.lifestyle)
+//       updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
+//     if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
+//       updates.pet_situation = ui.lifestyle.dogOwner
+//         ? "dog"
+//         : ui.lifestyle.petFriendly
+//         ? "small_pet"
+//         : "none";
+//     }
+//   }
 
-  if (ui.housing) {
-    if ("budget" in ui.housing) {
-      const { min, max } = parseBudgetRange(ui.housing.budget);
-      updates.budget_min = min;
-      updates.budget_max = max;
-    }
-    if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
-    if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
-    if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
-  }
+//   if (ui.housing) {
+//     if ("budget" in ui.housing) {
+//       const { min, max } = parseBudgetRange(ui.housing.budget);
+//       updates.budget_min = min;
+//       updates.budget_max = max;
+//     }
+//     if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
+//     if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
+//     if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
+//   }
 
-  if (ui.basic) {
-    if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
-    if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
-  }
-  if ("location_sharing" in ui) {
-    updates.location_sharing = ui.location_sharing;
-  }
+//   if (ui.basic) {
+//     if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
+//     if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
+//   }
+//   if ("location_sharing" in ui) {
+//     updates.location_sharing = ui.location_sharing;
+//   }
 
-  // ✅ Persist location_sharing
-  if ("location" in ui) {
-    updates.zipcode = ui.location?.replace("ZIP ", "") || null;
-  }
+//   // ✅ Persist location_sharing
+//   if ("location" in ui) {
+//     updates.zipcode = ui.location?.replace("ZIP ", "") || null;
+//   }
 
-  if ("location_sharing" in ui) {
-    updates.location_sharing = ui.location_sharing;
-  }
+//   if ("location_sharing" in ui) {
+//     updates.location_sharing = ui.location_sharing;
+//   }
 
-  return updates;
-}
+//   return updates;
+// }
 
 export const authService = new AuthService();
 export default authService;

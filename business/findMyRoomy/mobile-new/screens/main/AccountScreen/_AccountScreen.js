@@ -314,8 +314,9 @@ const AccountScreen = () => {
       if (photoRes.success && photoRes.photos?.length > 0) {
         // Map into {id, uri}
         const mapped = photoRes.photos.map((url, i) => ({
-          id: `remote_${i}`,
-          uri: url,
+          id: String(i),
+          url: url,  // Use 'url' consistently
+          path: photoRes.paths?.[i] || `photo_${i}`,
         }));
 
         profileData = {
