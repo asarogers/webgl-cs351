@@ -163,8 +163,6 @@ const normalizeServerProfileToAccount = (srv) => {
     defaultProfile.location_sharing ??
     false;
 
-  console.log("***location", locationSharing);
-
   return {
     ...defaultProfile,
     avatarUri: srv.avatarUri ?? defaultProfile.avatarUri,

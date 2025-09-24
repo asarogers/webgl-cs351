@@ -160,8 +160,8 @@ class AuthService {
             const { firstName, lastName } = parseFullName(fullName);
 
             // Debug logging to see what metadata is available
-            console.log("Google OAuth user metadata:", user.user_metadata);
-            console.log("Parsed name - First:", firstName, "Last:", lastName);
+            // console.log("Google OAuth user metadata:", user.user_metadata);
+            // console.log("Parsed name - First:", firstName, "Last:", lastName);
 
             await supabase.from("users").insert([
               {
@@ -318,6 +318,29 @@ class AuthService {
       };
     }
   }
+
+  async getZip() {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user)
+        throw userError || new Error("No authenticated user");
+      const { data, error } = await supabase
+        .from("users")
+        .select("zipcode")
+        .eq("id", user.id)
+        .single();
+      if (error || !data)
+        throw error || new Error("Failed to fetch visibility");
+      return data.is_visible; // true = visible, false = hidden
+    } catch (err) {
+      console.error("getProfileVisibility Error:", err);
+      return null;
+    }
+  }
+
 
   async getProfileVisibility() {
     try {
@@ -628,7 +651,7 @@ class AuthService {
       }
 
       if (!flagsData || flagsData.length === 0) {
-        console.log("No flags found for user");
+        // console.log("No flags found for user");
         return [];
       }
 
@@ -657,8 +680,8 @@ class AuthService {
       }
 
       // // Debug: Print all results for inspection
-      // console.log("Raw flag records from Supabase:", flagsData);
-      // console.log("User data from Supabase:", usersData);
+      // // console.log("Raw flag records from Supabase:", flagsData);
+      // // console.log("User data from Supabase:", usersData);
 
       // Combine flags with user data
       const processed = flagsData.map((flag) => {
@@ -689,7 +712,7 @@ class AuthService {
       // Debug: Show processed flags as displayed in the app
       // processed.forEach(flag => {
       //   const user = flag.flagged_user;
-      //   console.log(
+      //   // console.log(
       //     `[${flag.flag_type}]`,
       //     flag.flagged_user_id,
       //     `${user.first_name} ${user.last_name}`,
@@ -1120,7 +1143,7 @@ class AuthService {
       } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("No authenticated user");
-      console.log("incoming ui", uiProfile);
+      // console.log("incoming ui", uiProfile);
 
       const updates = {};
 
@@ -1195,58 +1218,40 @@ class AuthService {
     fileUri,
     {
       bucket = "user-photos",
-      makePublic = false,
       contentType = "image/jpeg",
     } = {}
   ) {
-    console.log("🔍 [uploadUserPhoto] ===== STARTING UPLOAD PROCESS =====");
-    console.log("🔍 [uploadUserPhoto] File URI:", fileUri);
-  
     try {
-      // 1) Get current user
       const user = await this._getCurrentUserOrThrow();
-      console.log("🔍 User ID:", user.id);
   
-      // 2) Build storage path
       const fileExt = fileUri.split(".").pop() || "jpg";
       const fileName = `${Date.now()}-${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
   
-      // 3) Upload to Supabase Storage
+      // Upload file
       const response = await fetch(fileUri);
       if (!response.ok) throw new Error(`Failed to fetch file: ${response.status}`);
       const fileData = await response.arrayBuffer();
   
-      const { data, error } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, fileData, {
           contentType,
           upsert: false,
         });
   
-      if (error) throw new Error(`Upload failed: ${error.message}`);
+      if (uploadError) throw uploadError;
   
-      console.log("✅ Upload successful! Path:", filePath);
+      // Generate public URL (no need for signed URLs anymore)
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
   
-      // 4) Generate URL (public or signed)
-      let publicUrl: string | null = null;
-      if (makePublic) {
-        const { data: urlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(filePath);
-        publicUrl = urlData.publicUrl;
-      } else {
-        const { data: signedData, error: signedErr } = await supabase.storage
-          .from(bucket)
-          .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
-        if (!signedErr) {
-          publicUrl = signedData.signedUrl;
-        }
-      }
+      const publicUrl = urlData.publicUrl;
   
-      // 5) Update user row in DB
+      // Update user row with file path
       const { data: userRow, error: readErr } = await supabase
         .from("users")
         .select("photos")
@@ -1268,11 +1273,10 @@ class AuthService {
   
       if (updateErr) throw updateErr;
   
-      // 6) Return both the storage path & usable URL
       return {
         success: true,
         path: filePath,
-        url: publicUrl,
+        url: publicUrl, // Never expires!
         photos: updatedPhotos,
       };
     } catch (error) {
@@ -1285,283 +1289,167 @@ class AuthService {
       };
     }
   }
-  
-  
-  // Helper method to handle successful uploads
-  async handleUploadSuccess(data, filePath, bucket, makePublic) {
-    console.log("🔍 [handleUploadSuccess] Processing successful upload");
-    console.log("🔍 [handleUploadSuccess] Data:", JSON.stringify(data, null, 2));
-    
-    // Generate URL
-    let publicUrl = null;
-    
+
+  async updateZip(newZip) {
     try {
-      if (makePublic) {
-        console.log("🔍 [handleUploadSuccess] Creating public URL");
-        const { data: urlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(filePath);
-        
-        publicUrl = urlData.publicUrl;
-        console.log("✅ [handleUploadSuccess] Public URL:", publicUrl);
-      } else {
-        console.log("🔍 [handleUploadSuccess] Creating signed URL");
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from(bucket)
-          .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("No authenticated user");
   
-        if (signedUrlError) {
-          console.error("❌ [handleUploadSuccess] Signed URL error:", signedUrlError);
-        } else {
-          publicUrl = signedUrlData.signedUrl;
-          console.log("✅ [handleUploadSuccess] Signed URL:", publicUrl);
-        }
+      // Ensure we only allow numeric zips (basic validation)
+      const sanitizedZip = String(newZip).replace(/\D/g, "").slice(0, 10);
+  
+      if (!sanitizedZip) {
+        throw new Error("Invalid zipcode provided");
       }
-    } catch (urlError) {
-      console.error("❌ [handleUploadSuccess] URL generation error:", urlError);
-      // Still return success since upload worked
+  
+      const { data, error } = await supabase
+        .from("users")
+        .update({
+          zipcode: sanitizedZip,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select("id, zipcode")
+        .single();
+  
+      if (error) throw error;
+  
+      return {
+        success: true,
+        zipcode: data.zipcode,
+      };
+    } catch (err) {
+      console.error("updateZip Error:", err);
+      return {
+        success: false,
+        error: err.message || "Failed to update zipcode",
+      };
     }
-    
-    return {
-      success: true,
-      error: null,
-      data: data,
-      url: publicUrl,
-      path: filePath,
-    };
   }
   
-
+  
+  // Simplified helper - no need for signed URL logic
+  async handleUploadSuccess(data, filePath, bucket) {
+    try {
+      // Always generate public URL since bucket is public
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+      
+      const publicUrl = urlData.publicUrl;
+      
+      return {
+        success: true,
+        error: null,
+        data: data,
+        url: publicUrl,
+        path: filePath,
+      };
+    } catch (urlError) {
+      console.error("❌ [handleUploadSuccess] URL generation error:", urlError);
+      return {
+        success: true, // Upload still worked
+        error: null,
+        data: data,
+        url: null,
+        path: filePath,
+      };
+    }
+  }
+  
   async deleteUserPhoto(photoPath, { bucket = "user-photos" } = {}) {
     try {
-      console.log("🗑️ Starting photo deletion for path:", photoPath);
       const user = await this._getCurrentUserOrThrow();
-      console.log("👤 User ID:", user.id);
-
+  
       // 1) Get current photos array
       const { data: userRow, error: readErr } = await supabase
         .from("users")
         .select("photos")
         .eq("id", user.id)
         .single();
-
+  
       if (readErr) throw readErr;
-
-      const current = Array.isArray(userRow?.photos) ? userRow.photos : [];
-      console.log("📋 Current photos in database:", current);
-
-      // 2) Verify file exists and get exact details
-      console.log("🔍 Getting exact file details...");
-      const fileName = photoPath.split("/").pop(); // Get just the filename
-      const { data: fileList, error: listError } = await supabase.storage
+  
+      const currentPhotos = Array.isArray(userRow?.photos) ? userRow.photos : [];
+      
+      // 2) Remove from storage
+      const { error: deleteError } = await supabase.storage
         .from(bucket)
-        .list(user.id, { limit: 100 });
-
-      if (listError) {
-        console.error("❌ Could not list files:", listError);
-        throw listError;
+        .remove([photoPath]);
+  
+      // Don't throw on storage delete errors - file might already be gone
+      if (deleteError) {
+        console.warn("⚠️ Storage deletion warning:", deleteError.message);
       }
-
-      const targetFile = fileList.find((file) => file.name === fileName);
-      if (!targetFile) {
-        console.log("⚠️ File not found in storage, updating database only");
-        // File doesn't exist, just update database
-        const newPhotos = current.filter((path) => path !== photoPath);
-        const { error: updateErr } = await supabase
-          .from("users")
-          .update({
-            photos: newPhotos,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id);
-
-        if (updateErr) throw updateErr;
-        return { success: true, photos: newPhotos };
-      }
-
-      console.log("📄 Target file found:", targetFile);
-
-      // 3) Try multiple deletion approaches
-      let deleteSuccess = false;
-      let lastError = null;
-
-      // Method 1: Try with exact path from storage
-      console.log("🗑️ Method 1: Delete with exact path");
-      try {
-        const { error: deleteError } = await supabase.storage
-          .from(bucket)
-          .remove([photoPath]);
-
-        if (!deleteError) {
-          // Verify deletion
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const { data: verifyList } = await supabase.storage
-            .from(bucket)
-            .list(user.id, { limit: 100 });
-
-          const stillExists = verifyList?.find(
-            (file) => file.name === fileName
-          );
-          if (!stillExists) {
-            deleteSuccess = true;
-            console.log("✅ Method 1 successful");
-          }
-        } else {
-          lastError = deleteError;
-        }
-      } catch (error) {
-        lastError = error;
-        console.log("❌ Method 1 failed:", error);
-      }
-
-      // Method 2: Try using the storage admin client (if available)
-      if (!deleteSuccess) {
-        console.log("🗑️ Method 2: Admin delete");
-        try {
-          // Create a supabase admin client if you have the service role key
-          // You might need to pass this in or create a separate admin method
-
-          // For now, let's try a different approach - update the RLS policy check
-          const { error: deleteError2 } = await supabase.storage
-            .from(bucket)
-            .remove([`${user.id}/${fileName}`]); // Try with reconstructed path
-
-          if (!deleteError2) {
-            // Verify deletion
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            const { data: verifyList2 } = await supabase.storage
-              .from(bucket)
-              .list(user.id, { limit: 100 });
-
-            const stillExists2 = verifyList2?.find(
-              (file) => file.name === fileName
-            );
-            if (!stillExists2) {
-              deleteSuccess = true;
-              console.log("✅ Method 2 successful");
-            }
-          } else {
-            lastError = deleteError2;
-          }
-        } catch (error) {
-          lastError = error;
-          console.log("❌ Method 2 failed:", error);
-        }
-      }
-
-      // Method 3: Database-only deletion as fallback
-      if (!deleteSuccess) {
-        console.log(
-          "⚠️ Storage deletion failed, proceeding with database update only"
-        );
-        console.log("❌ Final error:", lastError);
-
-        // Still update the database to keep it in sync
-        const newPhotos = current.filter((path) => path !== photoPath);
-        const { error: updateErr } = await supabase
-          .from("users")
-          .update({
-            photos: newPhotos,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id);
-
-        if (updateErr) throw updateErr;
-
-        // Return partial success - database updated but storage file remains
-        return {
-          success: true,
-          photos: newPhotos,
-          warning:
-            "File removed from database but may still exist in storage due to permission issues",
-        };
-      }
-
-      // 4) Update database after successful storage deletion
-      const newPhotos = current.filter((path) => path !== photoPath);
-      console.log("📝 Updated photos array:", newPhotos);
-
+  
+      // 3) Always update database (even if storage delete failed)
+      const updatedPhotos = currentPhotos.filter(path => path !== photoPath);
+      
       const { error: updateErr } = await supabase
         .from("users")
         .update({
-          photos: newPhotos,
+          photos: updatedPhotos,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
-
-      if (updateErr) {
-        console.error("❌ Database update error:", updateErr);
-        throw updateErr;
-      }
-
-      console.log("🎉 Photo deletion completed successfully");
-      return { success: true, photos: newPhotos };
+  
+      if (updateErr) throw updateErr;
+  
+      return { 
+        success: true, 
+        photos: updatedPhotos,
+        storageDeleted: !deleteError
+      };
     } catch (err) {
-      console.error("💥 deleteUserPhoto error:", {
-        message: err.message,
-        error: err,
-      });
+      console.error("❌ deleteUserPhoto error:", err);
       return {
         success: false,
         error: err.message || "Delete failed",
       };
     }
   }
-  // 👇 fetches all user photo URLs (public or signed)
-  async getUserPhotos({
-    bucket = "user-photos",
-    signed = true,
-    expiresIn = 24 * 60 * 60, // 24 hours default
-  } = {}) {
+  
+  // Simplified getUserPhotos - no expiration concerns!
+  async getUserPhotos({ bucket = "user-photos" } = {}) {
     try {
       const user = await this._getCurrentUserOrThrow();
-
+  
       // 1) Load paths from users.photos
       const { data, error } = await supabase
         .from("users")
         .select("photos")
         .eq("id", user.id)
         .single();
-
+  
       if (error) throw error;
-
+  
       const paths = Array.isArray(data?.photos) ? data.photos : [];
-      if (paths.length === 0) return { success: true, photos: [] };
-
-      // 2) Map to URLs
-      if (!signed) {
-        // public bucket: return public URLs
-        const urls = paths.map(
-          (p) => supabase.storage.from(bucket).getPublicUrl(p).data.publicUrl
-        );
-        return { success: true, photos: urls, paths };
+      
+      if (paths.length === 0) {
+        return { success: true, photos: [], paths: [] };
       }
-
-      // private bucket: generate signed URLs (batch)
-      const { data: signedList, error: signErr } = await supabase.storage
-        .from(bucket)
-        .createSignedUrls(paths, expiresIn);
-
-      if (signErr) throw signErr;
-
-      // Filter out any failed signed URLs
-      const urls = signedList
-        .filter((x) => x.signedUrl && !x.error)
-        .map((x) => x.signedUrl);
-
-      // Log any failed URLs for debugging
-      const failedUrls = signedList.filter((x) => x.error);
-      if (failedUrls.length > 0) {
-        console.warn("Some signed URLs failed:", failedUrls);
-      }
-
-      return { success: true, photos: urls, paths };
+  
+      // 2) Generate public URLs (never expire)
+      const urls = paths.map(path => 
+        supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+      );
+  
+      return { 
+        success: true, 
+        photos: urls, 
+        paths 
+      };
     } catch (err) {
-      console.error("getUserPhotos error:", err);
+      console.error("❌ getUserPhotos error:", err);
       return {
         success: false,
         error: err.message || "Fetch failed",
         photos: [],
+        paths: []
       };
     }
   }
@@ -1633,9 +1521,11 @@ const drinksFromWeekendVibe = (v) => {
   return ["party", "bar", "drinks", "nightlife"].some((k) => s.includes(k));
 };
 
+
+
 // pet_situation: "dog", "small_pet", "none", ...
 function dbUserToUiProfile(row) {
-  console.log("row from database", row);
+  // console.log("row from database", row);
   const fullName =
     [row?.first_name?.trim(), row?.last_name?.trim()]
       .filter(Boolean)
@@ -1685,7 +1575,7 @@ function dbUserToUiProfile(row) {
 
 function uiProfileToDbUpdates(ui) {
   const updates = {};
-  console.log("backend ", ui);
+  // console.log("backend ", ui);
 
   if ("about" in ui) updates.about = ui.about ?? null;
   if ("interests" in ui)

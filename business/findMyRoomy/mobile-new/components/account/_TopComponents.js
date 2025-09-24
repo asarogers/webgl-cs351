@@ -16,284 +16,218 @@ import {
   View,
 } from "react-native";
 // Use:
+import {
+  getZipCode,
+  setUseAuto,
+} from "@/components/account/location/requestLocation";
 
+import authService from "@/database/authService";
 
 const { width } = Dimensions.get("window");
 
-/* ===================== PHOTOS ===================== */
+export function Hero({
+  editing,
+  profile,
+  updateProfile,
+  toggleEdit,
+  changeAvatar,
+  fadeAnim,
+  profileStrengthDots,
+}) {
+  // Always take first photo as avatar
+  const firstPhoto = profile.photos?.[0]?.uri;
+  const [zip, setZip] = useState(null);
+  useEffect(() => {
+    let isMounted = true; // prevent state update after unmount
 
-  import * as ImagePicker from "expo-image-picker";
+    async function fetchZip() {
+      try {
+        const z = await getZipCode();
+        console.log("got it");
+        if (isMounted) setZip(z);
+      } catch (err) {
+        console.error("Error getting zipcode:", err);
+      }
+    }
 
-  export const PhotoSection = ({ profile, canAddMore, updateProfile }) => {
-    const addPhoto = async () => {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission denied", "We need photo library access to add photos.");
-        return;
-      }
-  
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-  
-      if (!result.canceled) {
-        const uri = result.assets[0]?.uri;
-        if (uri) {
-          updateProfile((p) => ({
-            ...p,
-            photos: [...p.photos, { id: `${Date.now()}`, uri }],
-          }));
-        }
-      }
+    fetchZip();
+
+    return () => {
+      isMounted = false; // cleanup
     };
-  
-    const removePhoto = (id) => {
-      if (Platform.OS === "ios") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      updateProfile((p) => ({
-        ...p,
-        photos: p.photos.filter((ph) => ph.id !== id),
-      }));
-    };
-  
-    return (
-      <View style={styles.modernSection}>
-        <View style={styles.modernSectionHeader}>
-          <View style={styles.sectionTitleContainer}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="images-outline" size={18} color="#FFFFFF" />
-            </View>
-            <View>
-              <Text style={styles.modernSectionTitle}>Photos</Text>
-              <Text style={styles.sectionSubtitle}>Add up to 4 photos</Text>
-            </View>
-          </View>
-        </View>
-  
-        <View style={styles.modernPhotoGrid}>
-          {profile.photos.map((photo, index) => (
-            <Animated.View
-              key={photo.id}
-              style={[
-                styles.modernPhotoContainer,
-                { zIndex: profile.photos.length - index },
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.photoTouchable}
-                onLongPress={() =>
-                  Alert.alert("Remove photo?", "", [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Remove",
-                      style: "destructive",
-                      onPress: () => removePhoto(photo.id),
-                    },
-                  ])
-                }
-                activeOpacity={0.9}
-              >
-                <Image source={{ uri: photo.uri }} style={styles.modernPhotoImg} />
-                <View style={styles.photoRemoveButton}>
-                  <Ionicons name="close" size={14} color="#FFFFFF" />
-                </View>
-                {index === 0 && (
-                  <View style={styles.primaryBadge}>
-                    <Text style={styles.primaryBadgeText}>Primary</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
-  
-          {canAddMore && (
-            <TouchableOpacity
-              style={styles.addPhotoContainer}
-              onPress={addPhoto}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.addPhotoIcon, styles.addPhotoIconActive]}>
-                <Ionicons name="add" size={24} color="#3B82F6" />
-              </View>
-              <Text style={styles.addPhotoLabel}>Add Photo</Text>
-              <View style={styles.photoCounter}>
-                <Text style={styles.photoCounterText}>
-                  {profile.photos.length}/4
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  };
+  }, []);
 
-  
-  export function Hero({
-    editing,
-    profile,
-    updateProfile,
-    toggleEdit,
-    changeAvatar,
-    fadeAnim,
-    profileStrengthDots,
-  }) {
-    // Always take first photo as avatar
-    const firstPhoto = profile.photos?.[0]?.uri;
-  
-    return (
-      <Animated.View style={[styles.heroSection, { opacity: fadeAnim }]}>
-        <View style={styles.profileHeader}>
-          {/* Avatar */}
-          <TouchableOpacity
-            style={styles.avatarContainer}
-            onPress={editing.profile ? changeAvatar : undefined}
-            activeOpacity={0.8}
-          >
-            <View style={styles.avatarCircle}>
-              {firstPhoto ? (
-                <Image source={{ uri: firstPhoto }} style={styles.avatarImg} />
-              ) : (
-                <View style={styles.avatarGradient}>
-                  <Text style={styles.avatarText}>{profile.initials}</Text>
-                </View>
-              )}
-              {editing.profile && (
-                <View style={styles.avatarOverlay}>
-                  <Ionicons name="camera" size={18} color="#FFFFFF" />
-                </View>
-              )}
-            </View>
-            <View style={styles.onlineIndicator} />
-          </TouchableOpacity>
-  
-          {/* Info */}
-          <View style={styles.profileInfo}>
-            {editing.profile ? (
-              <>
-                <TextInput
-                  style={[styles.modernInput, styles.nameInput]}
-                  value={profile.name}
-                  placeholder="Full name"
-                  placeholderTextColor="#9CA3AF"
-                  onChangeText={(t) => updateProfile((p) => ({ ...p, name: t }))}
-                />
-  
-                {/* Non-editable location */}
-                <View
-                  style={[
-                    styles.modernInput,
-                    styles.locationInput,
-                    styles.locationDisplay,
-                  ]}
-                >
-                  <Ionicons name="location" size={16} color="#64748B" />
-                  <Text style={styles.locationDisplayText}>
-                    {profile.location || "No location set"}
-                  </Text>
-                </View>
-  
-                {/* Location visibility toggle */}
-                <View style={styles.locationToggleContainer}>
-                  <Text style={styles.toggleLabel}>Show location publicly</Text>
-                  <Switch
-                    value={profile.location_sharing}
-                    onValueChange={(enabled) => {
-                      if (Platform.OS === "ios") {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      }
-                      updateProfile((p) => ({
-                        ...p,
-                        location_sharing: enabled,
-                      }));
-                    }}
-                    trackColor={{ false: "#D1D5DB", true: "#EF4444" }}
-                    thumbColor={profile.location_sharing ? "#FFFFFF" : "#9CA3AF"}
-                  />
-                </View>
-              </>
+  return (
+    <Animated.View style={[styles.heroSection, { opacity: fadeAnim }]}>
+      <View style={styles.profileHeader}>
+        {/* Avatar */}
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={editing.profile ? changeAvatar : undefined}
+          activeOpacity={0.8}
+        >
+          <View style={styles.avatarCircle}>
+            {firstPhoto ? (
+              <Image source={{ uri: firstPhoto }} style={styles.avatarImg} />
             ) : (
-              <>
-                <Text style={styles.name}>{profile.name}</Text>
-                <View style={styles.locationContainer}>
-                  <Ionicons name="location" size={14} color="#EF4444" />
-                  <Text style={styles.location}>
-                    {profile.location_sharing
-                      ? profile.location || profile.rawZipcode || "—"
-                      : "—"}
-                  </Text>
-                </View>
-              </>
+              <View style={styles.avatarGradient}>
+                <Text style={styles.avatarText}>{profile.initials}</Text>
+              </View>
+            )}
+            {editing.profile && (
+              <View style={styles.avatarOverlay}>
+                <Ionicons name="camera" size={18} color="#FFFFFF" />
+              </View>
             )}
           </View>
-  
-          {/* Edit / Done button */}
-          <TouchableOpacity
-            style={[
-              styles.modernButton,
-              editing.profile && styles.modernButtonActive,
-            ]}
-            onPress={() => toggleEdit("profile")}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={editing.profile ? "checkmark" : "pencil"}
-              size={14}
-              color={editing.profile ? "#FFFFFF" : "#6B7280"}
-            />
-            <Text
-              style={[
-                styles.modernButtonText,
-                editing.profile && styles.modernButtonTextActive,
-              ]}
-            >
-              {editing.profile ? "Done" : "Edit"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-  
-        {/* Profile Strength */}
-        <View style={styles.strengthCard}>
-          <View style={styles.strengthContent}>
-            <View style={styles.strengthLeft}>
-              <Text style={styles.strengthNumber}>{profile.strength}%</Text>
-              <Text style={styles.strengthLabel}>Profile Complete</Text>
-            </View>
-            <View style={styles.strengthIndicator}>
-              <View style={styles.strengthRing}>
-                <View
-                  style={[
-                    styles.strengthFill,
-                    {
-                      transform: [
-                        { rotate: `${(profile.strength / 100) * 360}deg` },
-                      ],
-                    },
-                  ]}
+          <View style={styles.onlineIndicator} />
+        </TouchableOpacity>
+
+        {/* Info */}
+        <View style={styles.profileInfo}>
+          {editing.profile ? (
+            <>
+              <TextInput
+                style={[styles.modernInput, styles.nameInput]}
+                value={profile.name}
+                placeholder="Full name"
+                placeholderTextColor="#9CA3AF"
+                onChangeText={(t) => updateProfile((p) => ({ ...p, name: t }))}
+              />
+
+              {/* Non-editable location */}
+              <View
+                style={[
+                  styles.modernInput,
+                  styles.locationInput,
+                  styles.locationDisplay,
+                ]}
+              >
+                <Ionicons name="location" size={16} color="#64748B" />
+                <TextInput
+                  style={styles.locationDisplayText}
+                  value={zip}
+                  placeholder="Enter ZIP"
+                  keyboardType="numeric"
+                  maxLength={5}
+                  onChangeText={(newZip) => {
+                    updateProfile((p) => ({
+                      ...p,
+                      location_sharing: false,
+                    }));
+                    setUseAuto(false); // ✅ correct usage
+                    setZip(newZip);
+                  }}
                 />
               </View>
-              <View style={styles.strengthDots}>
-                {profileStrengthDots.map((filled, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.strengthDot,
-                      filled && styles.strengthDotFilled,
-                    ]}
-                  />
-                ))}
+
+              {/* Location visibility toggle */}
+              <View style={styles.locationToggleContainer}>
+                <Text style={styles.toggleLabel}>Show location publicly</Text>
+                <Switch
+                  value={profile.location_sharing}
+                  onValueChange={async (enabled) => {
+                    if (Platform.OS === "ios") {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+
+                    if (enabled) {
+                      try {
+                        setUseAuto(true); // ✅ correct usage
+
+                        const z = await getZipCode();
+                        setZip(z);
+                      } catch (err) {
+                        console.error(
+                          "Error getting zipcode in toggle change:",
+                          err
+                        );
+                      }
+                    }
+
+                    updateProfile((p) => ({
+                      ...p,
+                      location_sharing: enabled,
+                    }));
+                  }}
+                  trackColor={{ false: "#D1D5DB", true: "#EF4444" }}
+                  thumbColor={profile.location_sharing ? "#FFFFFF" : "#9CA3AF"}
+                />
               </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.name}>{profile.name}</Text>
+              <View style={styles.locationContainer}>
+                <Ionicons name="location" size={14} color="#EF4444" />
+                <Text style={styles.location}>{zip}</Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Edit / Done button */}
+        <TouchableOpacity
+          style={[
+            styles.modernButton,
+            editing.profile && styles.modernButtonActive,
+          ]}
+          onPress={() => toggleEdit("profile")}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={editing.profile ? "checkmark" : "pencil"}
+            size={14}
+            color={editing.profile ? "#FFFFFF" : "#6B7280"}
+          />
+          <Text
+            style={[
+              styles.modernButtonText,
+              editing.profile && styles.modernButtonTextActive,
+            ]}
+          >
+            {editing.profile ? "Done" : "Edit"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Profile Strength */}
+      <View style={styles.strengthCard}>
+        <View style={styles.strengthContent}>
+          <View style={styles.strengthLeft}>
+            <Text style={styles.strengthNumber}>{profile.strength}%</Text>
+            <Text style={styles.strengthLabel}>Profile Complete</Text>
+          </View>
+          <View style={styles.strengthIndicator}>
+            <View style={styles.strengthRing}>
+              <View
+                style={[
+                  styles.strengthFill,
+                  {
+                    transform: [
+                      { rotate: `${(profile.strength / 100) * 360}deg` },
+                    ],
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.strengthDots}>
+              {profileStrengthDots.map((filled, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.strengthDot,
+                    filled && styles.strengthDotFilled,
+                  ]}
+                />
+              ))}
             </View>
           </View>
         </View>
-      </Animated.View>
-    );
-  }
-  
+      </View>
+    </Animated.View>
+  );
+}
 
 /* ===================== STICKY HEADER ===================== */
 // Enhanced StickyHeader component that shows which sections are being edited

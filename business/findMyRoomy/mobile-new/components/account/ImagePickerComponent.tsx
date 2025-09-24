@@ -44,7 +44,7 @@ export const ImagePickerComponent = () => {
           }));
 
           setPhotos(photoObjects);
-          console.log("📷 Loaded user photos:", photoObjects);
+          // console.log("📷 Loaded user photos:", photoObjects);
         } else {
           console.error("❌ Failed to fetch photos:", result.error);
         }
@@ -69,7 +69,7 @@ export const ImagePickerComponent = () => {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        console.log("Selected asset:", asset);
+        // console.log("Selected asset:", asset);
 
         // Upload to Supabase
         const uploadResult = await authService.uploadUserPhoto(asset.uri, {
@@ -78,7 +78,7 @@ export const ImagePickerComponent = () => {
           contentType: asset.mimeType || "image/jpeg",
         });
 
-        console.log("Upload result:", uploadResult);
+        // console.log("Upload result:", uploadResult);
 
         if (uploadResult.success && uploadResult.url) {
           const url = uploadResult.url!;
@@ -86,7 +86,7 @@ export const ImagePickerComponent = () => {
             ...prev,
             { url, path: uploadResult.path },
           ]); // ✅ add uploaded photo
-          console.log("✅ Photo added to UI with URL:", url);
+          // console.log("✅ Photo added to UI with URL:", url);
         } else {
           console.error("❌ Upload failed:", uploadResult.error);
         }
@@ -103,7 +103,7 @@ export const ImagePickerComponent = () => {
       setDeletingIndex(index);
       const photoToDelete = photos[index];
 
-      console.log("🗑️ Deleting photo:", photoToDelete);
+      // console.log("🗑️ Deleting photo:", photoToDelete);
 
       const deleteResult = await authService.deleteUserPhoto(
         photoToDelete.path
@@ -111,7 +111,7 @@ export const ImagePickerComponent = () => {
 
       if (deleteResult.success) {
         setPhotos((prev) => prev.filter((_, i) => i !== index));
-        console.log("✅ Photo deleted successfully");
+        // console.log("✅ Photo deleted successfully");
       } else {
         console.error("❌ Delete failed:", deleteResult.error);
       }
