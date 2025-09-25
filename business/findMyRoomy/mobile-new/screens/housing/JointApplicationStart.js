@@ -1,1 +1,0 @@
-// JointApplicationStart.js

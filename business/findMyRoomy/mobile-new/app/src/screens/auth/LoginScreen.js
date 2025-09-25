@@ -158,12 +158,11 @@ const LoginScreen = ({ navigation }) => {
     try {
       const result = await authService.signInWithGoogle();
       if (result.success) {
-        // Optional: fetch onboarding step for this user
-        let onboarding = await authService.getOnboardingStep(result.user.id);
-        console.log("current step", onboarding)
-
-        navigateTo(onboarding, navigation)
-        
+        // Navigate to main app - the auth state change will be handled by HomeScreen
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }]
+        });
       } else {
         setError(result.error || 'Google login failed. Please try again.');
       }
@@ -195,24 +194,26 @@ const LoginScreen = ({ navigation }) => {
     }
 
     setError('');
-    setLoading(true);
-    
-    try {
-      const result = await authService.signInWithEmail(email, password);
+  setLoading(true);
   
-      if (result.success) {
-        navigateTo(result.onboarding, navigation)
+  try {
+    const result = await authService.signInWithEmail(email, password);
 
-      } else {
-        setError(result.error || 'Login failed. Please try again.');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-      console.log("Login attempt completed");
+    if (result.success) {
+      // Navigate to main app
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }]
+      });
+    } else {
+      setError(result.error || 'Login failed. Please try again.');
     }
+  } catch (error) {
+    console.error('Login error:', error);
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
   };
 
   const handleButtonPress = (callback) => {

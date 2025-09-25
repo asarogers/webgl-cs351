@@ -47,6 +47,78 @@ class AuthService {
     if (error) throw error;
   }
 
+  // Add to your AuthService class
+async setupAutoRefresh() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    
+    if (session) {
+      // Calculate refresh time (refresh 5 minutes before expiry)
+      const expiresAt = session.expires_at * 1000;
+      const refreshTime = expiresAt - Date.now() - (5 * 60 * 1000);
+      
+      if (refreshTime > 0) {
+        setTimeout(async () => {
+          const refreshResult = await this.refreshSession();
+          if (refreshResult.success) {
+            // Set up next refresh
+            this.setupAutoRefresh();
+          }
+        }, refreshTime);
+      }
+    }
+  } catch (error) {
+    console.error('Auto-refresh setup failed:', error);
+  }
+}
+
+// Add to your AuthService class
+async handleNetworkReconnect() {
+  try {
+    const isValid = await this.isSessionValid();
+    if (!isValid) {
+      const refreshResult = await this.refreshSession();
+      if (!refreshResult.success) {
+        // Session can't be refreshed, user needs to re-login
+        await this.signOut();
+        return { needsReauth: true };
+      }
+    }
+    return { needsReauth: false };
+  } catch (error) {
+    console.error('Network reconnect handling failed:', error);
+    return { needsReauth: true };
+  }
+}
+
+  async refreshSession() {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      return { success: true, session: data.session };
+    } catch (error) {
+      console.error('Session refresh failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  async isSessionValid() {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      
+      // Check if session exists and hasn't expired
+      if (!session) return false;
+      
+      const now = Math.floor(Date.now() / 1000);
+      return session.expires_at > now;
+    } catch (error) {
+      console.error('Session validation failed:', error);
+      return false;
+    }
+  }
+
   async saveUserIntent(intent) {
     try {
       const {
@@ -1144,7 +1216,8 @@ class AuthService {
           `
           id,
           first_name, last_name, email,
-          about, interests, photos,
+          about, interests, 
+           photos,
           education, company,
           weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
           budget_min, budget_max,
@@ -1158,7 +1231,18 @@ class AuthService {
 
       if (error) throw error;
 
+      // console.log("\n\n\n",,"--------------------")
+
+      const urls = data?.photos?.map(
+        (path) =>
+          supabase.storage.from("user-photos").getPublicUrl(path).data.publicUrl
+      );
+
+      data.photos = urls
+
       const profile = dbUserToUiProfile(data || {});
+
+
       return { success: true, profile, raw: data };
     } catch (err) {
       console.error("getAccountProfileForUI Error:", err);
@@ -1188,7 +1272,9 @@ class AuthService {
       }
 
       // Build updates from helper
+      console.log("before uiProfile", uiProfile)
       const dbUpdates = uiProfileToDbUpdates(uiProfile);
+      console.log("after uiProfile", dbUpdates)
 
       // ✅ FIXED: Handle photos properly
       if (uiProfile.photos && Array.isArray(uiProfile.photos)) {
@@ -1272,8 +1358,11 @@ class AuthService {
         .substring(2)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`; // ✅ always a relative path
 
+      // 
+
       // Upload file
       const response = await fetch(fileUri);
+      // console.log(response)
       if (!response.ok)
         throw new Error(`Failed to fetch file: ${response.status}`);
       const fileData = await response.arrayBuffer();
@@ -1284,14 +1373,15 @@ class AuthService {
 
       if (uploadError) throw uploadError;
 
-      // Generate public URL (to return immediately for UI)
+      // // Generate public URL (to return immediately for UI)
       const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
+      // console.log(publicUrl)
 
-      // Fetch current photos
+      // // Fetch current photos
       const { data: userRow, error: readErr } = await supabase
         .from("users")
         .select("photos")
@@ -1304,7 +1394,7 @@ class AuthService {
         ? userRow.photos
         : [];
 
-      // ✅ store only relative paths, strip any accidental full URL
+      // // ✅ store only relative paths, strip any accidental full URL
       const updatedPhotos = [
         ...currentPhotos,
         filePath.replace(
@@ -1312,6 +1402,8 @@ class AuthService {
           ""
         ),
       ];
+
+      // console.log("updated photos", updatedPhotos)
 
       const { error: updateErr } = await supabase
         .from("users")
@@ -1441,9 +1533,11 @@ class AuthService {
       }
 
       // ✅ Normalize: strip any full URL accidentally saved
-      paths = paths.map((p) =>
-        p.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")
-      );
+      // paths = paths.map((p) =>
+      //   p.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")
+      // );
+
+      console.log("*** paths", paths)
 
       // Generate public URLs
       const urls = paths.map(
@@ -1537,12 +1631,12 @@ const normalizePhotos = (raw) => {
         if (p.startsWith('http')) {
           // Extract the path from the full URL for storage
           const path = p.replace(SUPABASE_STORAGE_URL, '');
-          console.log(`✅ normalizePhotos[${i}]: URL string "${p}" -> {id: ${i}, url: ${p}, path: ${path}}`);
+          // console.log(`✅ normalizePhotos[${i}]: URL string "${p}" -> {id: ${i}, url: ${p}, path: ${path}}`);
           return { id: String(i), url: p, path };
         } else {
           // It's a path, construct the full URL
           const url = `${SUPABASE_STORAGE_URL}${p}`;
-          console.log(`✅ normalizePhotos[${i}]: path string "${p}" -> {id: ${i}, url: ${url}, path: ${p}}`);
+          // console.log(`✅ normalizePhotos[${i}]: path string "${p}" -> {id: ${i}, url: ${url}, path: ${p}}`);
           return { id: String(i), url, path: p };
         }
       }
@@ -1554,7 +1648,7 @@ const normalizePhotos = (raw) => {
           const fullUrl = url.startsWith('http') ? url : `${SUPABASE_STORAGE_URL}${url}`;
           // Use existing path or extract from URL
           const path = p.path || (fullUrl.startsWith(SUPABASE_STORAGE_URL) ? fullUrl.replace(SUPABASE_STORAGE_URL, '') : url);
-          console.log(`✅ normalizePhotos[${i}]: object -> {id: ${p.id || i}, url: ${fullUrl}, path: ${path}}`);
+          // console.log(`✅ normalizePhotos[${i}]: object -> {id: ${p.id || i}, url: ${fullUrl}, path: ${path}}`);
           return { 
             id: p.id || String(i), 
             url: fullUrl,
@@ -1570,7 +1664,7 @@ const normalizePhotos = (raw) => {
     })
     .filter(Boolean);
   
-  console.log("🔍 normalizePhotos output:", result);
+  // console.log("🔍 normalizePhotos output:", result);
   return result;
 };
 
@@ -1582,52 +1676,52 @@ function uiProfileToDbUpdates(ui) {
     updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
     
   // ✅ FIXED: Store the actual file path, not the ID or full URL
-  if ("photos" in ui) {
-    console.log("🔍 uiProfileToDbUpdates photos input:", ui.photos);
+  // if ("photos" in ui) {
+  //   console.log("🔍 uiProfileToDbUpdates photos input:", ui.photos);
     
-    updates.photos = Array.isArray(ui.photos)
-      ? ui.photos
-          .map((p, i) => {
-            if (typeof p === "string") {
-              // If it's a full URL, extract the path
-              if (p.startsWith(SUPABASE_STORAGE_URL)) {
-                const path = p.replace(SUPABASE_STORAGE_URL, '');
-                console.log(`✅ uiProfileToDbUpdates[${i}]: URL string -> ${path}`);
-                return path;
-              }
-              // If it's already a path, use it
-              console.log(`✅ uiProfileToDbUpdates[${i}]: path string -> ${p}`);
-              return p;
-            }
+  //   updates.photos = Array.isArray(ui.photos)
+  //     ? ui.photos
+  //         .map((p, i) => {
+  //           if (typeof p === "string") {
+  //             // If it's a full URL, extract the path
+  //             if (p.startsWith(SUPABASE_STORAGE_URL)) {
+  //               const path = p.replace(SUPABASE_STORAGE_URL, '');
+  //               console.log(`✅ uiProfileToDbUpdates[${i}]: URL string -> ${path}`);
+  //               return path;
+  //             }
+  //             // If it's already a path, use it
+  //             console.log(`✅ uiProfileToDbUpdates[${i}]: path string -> ${p}`);
+  //             return p;
+  //           }
             
-            // ✅ FIXED: Use 'path' property, fallback to extracting from URL
-            if (p && typeof p === "object") {
-              if (p.path) {
-                console.log(`✅ uiProfileToDbUpdates[${i}]: object with path -> ${p.path}`);
-                return p.path;
-              } else if (p.url) {
-                const path = p.url.startsWith(SUPABASE_STORAGE_URL) 
-                  ? p.url.replace(SUPABASE_STORAGE_URL, '')
-                  : p.url;
-                console.log(`✅ uiProfileToDbUpdates[${i}]: object with URL -> ${path} (extracted from ${p.url})`);
-                return path;
-              } else if (p.uri) {
-                const path = p.uri.startsWith(SUPABASE_STORAGE_URL) 
-                  ? p.uri.replace(SUPABASE_STORAGE_URL, '')
-                  : p.uri;
-                console.log(`✅ uiProfileToDbUpdates[${i}]: object with URI -> ${path} (extracted from ${p.uri})`);
-                return path;
-              }
-            }
+  //           // ✅ FIXED: Use 'path' property, fallback to extracting from URL
+  //           if (p && typeof p === "object") {
+  //             if (p.path) {
+  //               console.log(`✅ uiProfileToDbUpdates[${i}]: object with path -> ${p.path}`);
+  //               return p.path;
+  //             } else if (p.url) {
+  //               const path = p.url.startsWith(SUPABASE_STORAGE_URL) 
+  //                 ? p.url.replace(SUPABASE_STORAGE_URL, '')
+  //                 : p.url;
+  //               console.log(`✅ uiProfileToDbUpdates[${i}]: object with URL -> ${path} (extracted from ${p.url})`);
+  //               return path;
+  //             } else if (p.uri) {
+  //               const path = p.uri.startsWith(SUPABASE_STORAGE_URL) 
+  //                 ? p.uri.replace(SUPABASE_STORAGE_URL, '')
+  //                 : p.uri;
+  //               console.log(`✅ uiProfileToDbUpdates[${i}]: object with URI -> ${path} (extracted from ${p.uri})`);
+  //               return path;
+  //             }
+  //           }
             
-            console.log(`❌ uiProfileToDbUpdates[${i}]: invalid photo object:`, p);
-            return null;
-          })
-          .filter(Boolean)
-      : undefined;
+  //           console.log(`❌ uiProfileToDbUpdates[${i}]: invalid photo object:`, p);
+  //           return null;
+  //         })
+  //         .filter(Boolean)
+  //     : undefined;
     
-    console.log("🔍 uiProfileToDbUpdates photos output:", updates.photos);
-  }
+  //   console.log("🔍 uiProfileToDbUpdates photos output:", updates.photos);
+  // }
 
   if (ui.lifestyle) {
     if ("drinks" in ui.lifestyle)
@@ -1708,7 +1802,7 @@ function ensurePhotoConsistency(photos) {
 }
 // pet_situation: "dog", "small_pet", "none", ...
 function dbUserToUiProfile(row) {
-  console.log("row from database", row);
+  // console.log("row from database", row);
   const fullName =
     [row?.first_name?.trim(), row?.last_name?.trim()]
       .filter(Boolean)
@@ -1771,10 +1865,9 @@ function dbUserToUiProfile(row) {
       education: row?.education || "",
       company: row?.company || "",
     },
-
-    
-
-    photos: normalizePhotos(row?.photos),
+    // photos: normalizePhotos(row?.photos),
+    // TODO: delete the nromalziePhotos function
+    photos: (row?.photos),
     strength: computeProfileStrength(row),
   };
 }

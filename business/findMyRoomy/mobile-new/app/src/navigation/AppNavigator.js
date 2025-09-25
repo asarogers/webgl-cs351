@@ -1,37 +1,25 @@
 import React, { useEffect, useState } from "react";
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import OnboardingNavigator from "./OnboardingNavigator";
 import AuthNavigator from "./AuthNavigator";
 import TabNavigator from "./TabNavigator";
 import ProfilePreviewScreen from "../screens/main/ProfilePreviewScreen";
-import { clearAppCache } from "../../../utils/storage";
 import SplashScreen from "../screens/onboarding/SplashScreen";
 
 const Stack = createNativeStackNavigator();
 
-const AppNavigator = () => {
-  // Initialize as null to show loading state
+const AppNavigator = ({ isAuthenticated, userOnboarding }) => {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const checkFirstTimeUser = async () => {
-      // await clearAppCache();
       try {
         const value = await AsyncStorage.getItem("hasLaunched");
-        if (value === null) {
-          // No value stored, so it's their first time
-          setIsFirstTimeUser(true);
-        } else {
-          // Value exists (regardless of what it is), so not first time
-          // setIsFirstTimeUser(false);
-          setIsFirstTimeUser(false);
-
-        }
+        setIsFirstTimeUser(value === null);
       } catch (err) {
         console.error("Failed to check first-time user flag:", err);
-        // On error, assume first time for safety
         setIsFirstTimeUser(true);
       }
     };
@@ -39,7 +27,6 @@ const AppNavigator = () => {
     checkFirstTimeUser();
   }, []);
 
-  // This function will persist the onboarding completion
   const completeOnboarding = async () => {
     try {
       console.log("Completing onboarding...");
@@ -51,14 +38,24 @@ const AppNavigator = () => {
     }
   };
 
-  // Show loading/splash while checking storage
+  // Show loading while checking storage
   if (isFirstTimeUser === null) {
-    return <SplashScreen />; // or return null for blank screen
+    return (
+
+        <SplashScreen />
+
+    );
   }
 
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Onboarding">
+  // Determine initial route and available screens based on auth state
+  let initialRouteName = "Onboarding";
+  let availableScreens = [];
+
+  if (isFirstTimeUser) {
+    // First time user - show onboarding
+    initialRouteName = "Onboarding";
+    availableScreens = [
+      <Stack.Screen key="onboarding" name="Onboarding">
         {props => (
           <OnboardingNavigator
             {...props}
@@ -66,11 +63,35 @@ const AppNavigator = () => {
             completeOnboarding={completeOnboarding}
           />
         )}
-      </Stack.Screen>
-      <Stack.Screen name="Auth" component={AuthNavigator} />
-      <Stack.Screen name="Main" component={TabNavigator} />
-      <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} />
-    </Stack.Navigator>
+      </Stack.Screen>,
+      <Stack.Screen key="auth" name="Auth" component={AuthNavigator} />
+    ];
+  } else if (isAuthenticated) {
+    // Returning authenticated user - go to main app
+    initialRouteName = "Main";
+    availableScreens = [
+      <Stack.Screen key="main" name="Main" component={TabNavigator} />,
+      <Stack.Screen key="profilePreview" name="ProfilePreview" component={ProfilePreviewScreen} />
+    ];
+  } else {
+    // Returning user but not authenticated - go to auth
+    initialRouteName = "Auth";
+    availableScreens = [
+      <Stack.Screen key="auth" name="Auth" component={AuthNavigator} />,
+      <Stack.Screen key="main" name="Main" component={TabNavigator} />,
+      <Stack.Screen key="profilePreview" name="ProfilePreview" component={ProfilePreviewScreen} />
+    ];
+  }
+
+  return (
+
+      <Stack.Navigator 
+        initialRouteName={initialRouteName}
+        screenOptions={{ headerShown: false }}
+      >
+        {availableScreens}
+      </Stack.Navigator>
+
   );
 };
 

@@ -7,6 +7,7 @@ import MapScreen from "../screens/main/MapScreen";
 import DiscoverScreen from "../screens/main/DiscoveryScreen";
 // import MessagingScreen from "../screens/main/MessagingScreen";
 import AccountScreen from "../screens/main/_AccountScreen";
+import ProfileScreen from "../screens/main/ProfileScreen"
 import SettingsScreen from "../screens/settings/SettingsHome";
 
 const Tab = createBottomTabNavigator();
@@ -49,7 +50,7 @@ const TabNavigator = () => {
         },
       })}
     >
-       <Tab.Screen name="Profile" component={AccountScreen} />
+       <Tab.Screen name="Profile" component={ProfileScreen} />
        {/* <Tab.Screen name="Messages" component={MessagingScreen} /> */}
       <Tab.Screen name="Map" component={MapScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />

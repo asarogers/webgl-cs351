@@ -21,6 +21,9 @@ import { ApplicationManager } from "./3_ApplicationManager";
 import PrivacyAndSafety from "./4_Privacy_Safety";
 import FeedbackAndAbout from "./5_FeedbackAndAbout";
 import SupportScreen from "./6_Support";
+// Add these imports at the top of your SettingsScreen
+import { useNavigation } from '@react-navigation/native';
+import authService from '@/database/authService'; // Adjust path as needed
 
 // Settings data organized into sections using brand colors
 const SETTINGS_SECTIONS = [
@@ -113,8 +116,9 @@ const SETTINGS_SECTIONS = [
 
 const SettingsScreen = () => {
   const [page, setPage] = useState("home");
+  const navigation = useNavigation(); // Add this line
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     Alert.alert(
       "Sign Out",
       "Are you sure you want to sign out of your account?",
@@ -126,10 +130,25 @@ const SettingsScreen = () => {
         {
           text: "Sign Out",
           style: "destructive",
-          onPress: () => {
-            // Add your sign out logic here
-            console.log("User signed out");
-            // Example: navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          onPress: async () => {
+            try {
+              // Call your authService signOut method
+              const result = await authService.signOut();
+              
+              if (result.success) {
+                // Navigate back to auth screens
+                // Since you're in a tab navigator, you need to reset the entire navigation stack
+                navigation.getParent()?.reset({
+                  index: 0,
+                  routes: [{ name: 'Auth' }]
+                });
+              } else {
+                Alert.alert('Error', 'Failed to sign out. Please try again.');
+              }
+            } catch (error) {
+              console.error('Sign out error:', error);
+              Alert.alert('Error', 'Something went wrong. Please try again.');
+            }
           },
         },
       ]

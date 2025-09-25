@@ -177,6 +177,7 @@ const AccountScreen = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [dirty, setDirty] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const [editing, setEditing] = useState({
     profile: false,
@@ -196,12 +197,14 @@ const AccountScreen = () => {
   useEffect(() => {
     (async () => {
       try {
+        setDirty(false);
+
         const res = await authService.getAccountProfileForUI();
         let profileData = res.profile;
 
         // ✅ Fetch Supabase photos for this user
         const photoRes = await authService.getUserPhotos({
-          signed: true
+          signed: true,
         });
 
         if (photoRes.success && photoRes.photos?.length > 0) {
@@ -220,6 +223,7 @@ const AccountScreen = () => {
         // console.log("came from load", profileData)
 
         setProfile(profileData);
+        setInitialLoadComplete(true);
 
         if (res?.success && res.profile) {
           // Show location sharing prompt if not enabled
@@ -287,17 +291,23 @@ const AccountScreen = () => {
     try {
       setSaving(true);
       setError(null);
-  
-      console.log("🔍 saveProfile: saving profile with photos:", updatedProfile.photos);
-    
+
+      console.log(
+        "🔍 saveProfile: saving profile with photos:",
+        updatedProfile.photos
+      );
+
       const res = await authService.updateAccountProfileFromUI(updatedProfile);
-  
+
       if (!res?.success) {
         throw new Error(res?.error || "Failed to save");
       }
 
-      console.log("🔍 saveProfile: received back from server:", res.profile?.photos);
-  
+      console.log(
+        "🔍 saveProfile: received back from server:",
+        res.profile?.photos
+      );
+
       setProfile(res.profile);
       setDirty(false);
     } catch (e) {
@@ -309,7 +319,9 @@ const AccountScreen = () => {
 
   const updateProfile = (updater) => {
     // console.log("callled");
-    setDirty(true);
+    if (initialLoadComplete) {
+      setDirty(true);
+    }
     setProfile((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       return next;
@@ -326,38 +338,7 @@ const AccountScreen = () => {
    * MEDIA SELECTION
    * ======================================================================== */
 
-  const requestMediaPerms = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission needed",
-        "We need access to your photos to let you pick images.",
-        [{ text: "OK", style: "default" }]
-      );
-      return false;
-    }
-    return true;
-  };
 
-  const pickImage = async () => {
-    const ok = await requestMediaPerms();
-    if (!ok) return null;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [MediaType.Image],
-      allowsMultipleSelection: false,
-      quality: 0.8,
-      aspect: [1, 1],
-      allowsEditing: true,
-    });
-    if (result.canceled) return null;
-    return result.assets?.[0]?.uri ?? null;
-  };
-
-  const changeAvatar = async () => {
-    const uri = await pickImage();
-    if (!uri) return;
-    updateProfile((p) => ({ ...p, avatarUri: uri }));
-  };
 
   /* ==========================================================================
    * DISPLAY UTILITIES
@@ -569,18 +550,25 @@ const AccountScreen = () => {
           profileStrengthDots={profileStrengthDots}
         />
         <ImagePickerComponent
-  editing={editing}
-  profile={profile}
-  toggleEdit={toggleEdit}
-  onPhotosChange={(photos) => {
-    console.log("🔍 AccountScreen: onPhotosChange called with:", photos);
-    updateProfile((p) => {
-      const updated = { ...p, photos };
-      console.log("🔍 AccountScreen: updating profile photos to:", updated.photos);
-      return updated;
-    });
-  }}
-/>
+          editing={editing}
+          profile={profile}
+          toggleEdit={toggleEdit}
+          initialLoadComplete={initialLoadComplete}
+          onPhotosChange={(photos) => {
+            console.log(
+              "🔍 AccountScreen: onPhotosChange called with:",
+              photos
+            );
+            updateProfile((p) => {
+              const updated = { ...p, photos };
+              console.log(
+                "🔍 AccountScreen: updating profile photos to:",
+                updated.photos
+              );
+              return updated;
+            });
+          }}
+        />
 
         {/*
         <AboutSection

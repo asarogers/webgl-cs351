@@ -18,16 +18,17 @@ import authService from "@/database/authService";
 const MAX_PHOTOS = 6;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-type Photo = { url: string; path: string };
+type Photo = { uri: string; path: string };
 type Props = {
   editing?: boolean;
   profile?: any;
   toggleEdit?: () => void;
-  onPhotosChange?: (photos: Photo[]) => void;
+  setProfile : any;
+  setDirty : any;
 };
 
 export const ImagePickerComponent: React.FC<Props> = ({
-  onPhotosChange,
+  setProfile, profile, setDirty
 }) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -45,16 +46,16 @@ export const ImagePickerComponent: React.FC<Props> = ({
         console.log("🔍 getUserPhotos result:", result);
   
         if (result.success && result.paths) {
-          const photoObjects = result.photos.map((url, i) => ({
+          const photoObjects = result.photos.map((uri, i) => ({
             id: String(i),
-            url: url,
+            uri: uri,
             path: result.paths[i],
           }));
           
           console.log("🔍 ImagePickerComponent: mapped photoObjects:", photoObjects);
           
           setPhotos(photoObjects);
-          onPhotosChange?.(photoObjects);
+          // onPhotosChange?.(photoObjects);
         } else {
           console.error("❌ Failed to fetch photos:", result.error);
         }
@@ -68,8 +69,12 @@ export const ImagePickerComponent: React.FC<Props> = ({
 
   // ✅ Sync to parent whenever photos changes
   useEffect(() => {
-    console.log("changed", photos)
-    onPhotosChange?.(photos);
+    
+    setProfile((prev: any) => ({
+      ...prev,
+      photos,
+    }));
+
   }, [photos]);
 
   const addPhoto = async () => {
@@ -88,18 +93,19 @@ export const ImagePickerComponent: React.FC<Props> = ({
           bucket: "user-photos",
           contentType: asset.mimeType || "image/jpeg",
         });
-        const SUPABASE_STORAGE_URL = "https://viscgyefdktuymldptuz.supabase.co/storage/v1/object/public/user-photos/";
 
+        // console.log(uploadResult)
   
         if (uploadResult.success && uploadResult.url) {
           const newPhoto = { 
             id: String(photos.length),
-            url: uploadResult.url,
-            path: uploadResult.path || uploadResult.url.replace(SUPABASE_STORAGE_URL, '')
+            uri: uploadResult.url,
+            path: uploadResult.path,
           };
+
           
           setPhotos((prev) => [...prev, newPhoto]);
-          console.log("🔍 Added new photo:", newPhoto);
+          setDirty(true)
         } else {
           console.error("❌ Upload failed:", uploadResult.error);
         }
@@ -144,9 +150,9 @@ export const ImagePickerComponent: React.FC<Props> = ({
       <ScrollView contentContainerStyle={styles.grid}>
         {photos.map((photo, index) => (
           <View key={index} style={styles.photoBox}>
-            <Pressable onLongPress={() => setSelectedPhoto(photo.url)}>
+            <Pressable onLongPress={() => setSelectedPhoto(photo.uri)}>
               <Image
-                source={{ uri: photo.url }}
+                source={{ uri: photo.uri }}
                 style={styles.photoImage}
                 onLoadStart={() => handleImageLoadStart(index)}
                 onLoadEnd={() => handleImageLoadEnd(index)}
