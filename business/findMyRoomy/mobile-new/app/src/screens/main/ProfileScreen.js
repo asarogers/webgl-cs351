@@ -75,10 +75,10 @@ export default function ProfileScreen() {
       setSaving(true);
       setError(null);
 
-      console.log(
-        "🔍 saveProfile: saving profile with photos:",
-        updatedProfile.photos
-      );
+      // console.log(
+      //   "🔍 saveProfile: saving profile with photos:",
+      //   updatedProfile.photos
+      // );
 
       const res = await authService.updateAccountProfileFromUI(updatedProfile);
 
@@ -86,11 +86,14 @@ export default function ProfileScreen() {
         throw new Error(res?.error || "Failed to save");
       }
 
-      console.log(
-        "🔍 saveProfile: received back from server:",
-        res.profile?.photos
-      );
+      // console.log(
+      //   "🔍 saveProfile: received back from server:",
+      //   res.profile?.photos
+      // );
+      // ensure the photos are set before saving as the onload on mount in the useEffect looks for the photos to be without a long path
+      res.profile.photos = updatedProfile.photos
 
+      console.log(res.profile.photos)
       setProfile(res.profile);
       setDirty(false);
     } catch (e) {

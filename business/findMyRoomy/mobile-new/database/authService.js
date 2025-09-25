@@ -1272,9 +1272,9 @@ async handleNetworkReconnect() {
       }
 
       // Build updates from helper
-      console.log("before uiProfile", uiProfile)
+      // console.log("before uiProfile", uiProfile)
       const dbUpdates = uiProfileToDbUpdates(uiProfile);
-      console.log("after uiProfile", dbUpdates)
+      // console.log("after uiProfile", dbUpdates)
 
       // ✅ FIXED: Handle photos properly
       if (uiProfile.photos && Array.isArray(uiProfile.photos)) {
