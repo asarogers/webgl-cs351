@@ -18,13 +18,18 @@ import authService from "@/database/authService";
 const MAX_PHOTOS = 6;
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-type Photo = { uri: string; path: string };
+type Photo = { 
+  id: string; // Add unique id
+  uri: string; 
+  path: string;
+};
+
 type Props = {
   editing?: boolean;
   profile?: any;
   toggleEdit?: () => void;
-  setProfile : any;
-  setDirty : any;
+  setProfile: any;
+  setDirty: any;
 };
 
 export const ImagePickerComponent: React.FC<Props> = ({
@@ -33,29 +38,23 @@ export const ImagePickerComponent: React.FC<Props> = ({
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
-  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
 
   // 🚀 Load photos on mount
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        console.log("🔍 ImagePickerComponent: fetching photos...");
-        
         const result = await authService.getUserPhotos({ bucket: "user-photos" });
-        console.log("🔍 getUserPhotos result:", result);
   
         if (result.success && result.paths) {
           const photoObjects = result.photos.map((uri, i) => ({
-            id: String(i),
+            id: `photo-${Date.now()}-${i}`, // Generate unique IDs
             uri: uri,
             path: result.paths[i],
           }));
           
-          console.log("🔍 ImagePickerComponent: mapped photoObjects:", photoObjects);
-          
           setPhotos(photoObjects);
-          // onPhotosChange?.(photoObjects);
         } else {
           console.error("❌ Failed to fetch photos:", result.error);
         }
@@ -69,12 +68,10 @@ export const ImagePickerComponent: React.FC<Props> = ({
 
   // ✅ Sync to parent whenever photos changes
   useEffect(() => {
-    
     setProfile((prev: any) => ({
       ...prev,
       photos,
     }));
-
   }, [photos]);
 
   const addPhoto = async () => {
@@ -93,19 +90,16 @@ export const ImagePickerComponent: React.FC<Props> = ({
           bucket: "user-photos",
           contentType: asset.mimeType || "image/jpeg",
         });
-
-        // console.log(uploadResult)
   
         if (uploadResult.success && uploadResult.url) {
           const newPhoto = { 
-            id: String(photos.length),
+            id: `photo-${Date.now()}`, // Generate unique ID
             uri: uploadResult.url,
             path: uploadResult.path,
           };
-
           
           setPhotos((prev) => [...prev, newPhoto]);
-          setDirty(true)
+          setDirty(true);
         } else {
           console.error("❌ Upload failed:", uploadResult.error);
         }
@@ -117,53 +111,66 @@ export const ImagePickerComponent: React.FC<Props> = ({
     }
   };
 
-  const removePhoto = async (index: number) => {
+  const removePhoto = async (photoId: string) => {
     try {
-      setDeletingIndex(index);
-      const photoToDelete = photos[index];
+      setDeletingIds(prev => new Set([...prev, photoId]));
+      
+      const photoToDelete = photos.find(p => p.id === photoId);
+      if (!photoToDelete) return;
+      
       const deleteResult = await authService.deleteUserPhoto(photoToDelete.path);
 
       if (deleteResult.success) {
-        setPhotos((prev) => prev.filter((_, i) => i !== index));
+        setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+        // Clean up any loading states for this photo
+        setLoadingIds(prev => {
+          const newSet = new Set([...prev]);
+          newSet.delete(photoId);
+          return newSet;
+        });
       } else {
         console.error("❌ Delete failed:", deleteResult.error);
       }
     } catch (error) {
       console.error("❌ Error deleting photo:", error);
     } finally {
-      setDeletingIndex(null);
+      setDeletingIds(prev => {
+        const newSet = new Set([...prev]);
+        newSet.delete(photoId);
+        return newSet;
+      });
     }
   };
 
-  const handleImageLoadStart = (index: number) =>
-    setLoadingImages((prev) => new Set([...prev, index]));
+  const handleImageLoadStart = (photoId: string) =>
+    setLoadingIds((prev) => new Set([...prev, photoId]));
 
-  const handleImageLoadEnd = (index: number) =>
-    setLoadingImages((prev) => {
+  const handleImageLoadEnd = (photoId: string) =>
+    setLoadingIds((prev) => {
       const newSet = new Set([...prev]);
-      newSet.delete(index);
+      newSet.delete(photoId);
       return newSet;
     });
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.grid}>
-        {photos.map((photo, index) => (
-          <View key={index} style={styles.photoBox}>
+        {photos.map((photo) => (
+          <View key={photo.id} style={styles.photoBox}>
             <Pressable onLongPress={() => setSelectedPhoto(photo.uri)}>
               <Image
                 source={{ uri: photo.uri }}
                 style={styles.photoImage}
-                onLoadStart={() => handleImageLoadStart(index)}
-                onLoadEnd={() => handleImageLoadEnd(index)}
-                onError={() => handleImageLoadEnd(index)}
+                onLoadStart={() => handleImageLoadStart(photo.id)}
+                onLoadEnd={() => handleImageLoadEnd(photo.id)}
+                onError={() => handleImageLoadEnd(photo.id)}
               />
-              {loadingImages.has(index) && (
+              {loadingIds.has(photo.id) && (
                 <View style={styles.imageLoadingOverlay}>
                   <ActivityIndicator size="small" color="#007AFF" />
                 </View>
               )}
-              {deletingIndex === index && (
+              {deletingIds.has(photo.id) && (
                 <View style={styles.deleteLoadingOverlay}>
                   <ActivityIndicator size="small" color="#fff" />
                 </View>
@@ -172,12 +179,12 @@ export const ImagePickerComponent: React.FC<Props> = ({
             <TouchableOpacity
               style={[
                 styles.removeButton,
-                deletingIndex === index && styles.removeButtonDisabled,
+                deletingIds.has(photo.id) && styles.removeButtonDisabled,
               ]}
-              onPress={() => removePhoto(index)}
-              disabled={deletingIndex === index}
+              onPress={() => removePhoto(photo.id)}
+              disabled={deletingIds.has(photo.id)}
             >
-              {deletingIndex === index ? (
+              {deletingIds.has(photo.id) ? (
                 <ActivityIndicator size={12} color="#fff" />
               ) : (
                 <Ionicons name="close" size={16} color="#fff" />
