@@ -17,10 +17,14 @@ import {
 import { INTERESTS, QUIZ } from "../../../../components/Interests_lifestyle";
 import authService from "../../../../database/authService";
 import ImagePickerComponent from "../../../../components/account/ImagePickerComponent";
+import { ProfileStrength } from "@/components/account/ProfileStength";
 
 // Extracted UI components
 import { StickyHeader } from "../../../../components/account/_TopComponents";
 import { Hero } from "../../../../components/account/Hero";
+import { AboutSection } from "@/components/account/AboutScreen";
+import { Interests } from "@/components/account/Interests";
+import { Basics } from "@/components/account/Basics";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
@@ -49,6 +53,7 @@ export default function ProfileScreen() {
 
         const res = await authService.getAccountProfileForUI();
         let profileData = res.profile;
+        // console.log("profile on load from database", profile)
 
         if (profileData.photos?.length > 0) {
           // Map into {id, uri}
@@ -91,9 +96,9 @@ export default function ProfileScreen() {
       //   res.profile?.photos
       // );
       // ensure the photos are set before saving as the onload on mount in the useEffect looks for the photos to be without a long path
-      res.profile.photos = updatedProfile.photos
+      res.profile.photos = updatedProfile.photos;
 
-      console.log(res.profile.photos)
+      console.log(res.profile.photos);
       setProfile(res.profile);
       setDirty(false);
     } catch (e) {
@@ -119,7 +124,6 @@ export default function ProfileScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditing((e) => ({ ...e, [key]: !e[key] }));
   };
-
 
   // if (loading) {
   //   return (
@@ -152,6 +156,8 @@ export default function ProfileScreen() {
       >
         {profile ? (
           <>
+            <ProfileStrength profile={profile} />
+
             <Hero
               editing={editing}
               profile={profile}
@@ -165,9 +171,29 @@ export default function ProfileScreen() {
               profile={profile}
               toggleEdit={toggleEdit}
               initialLoadComplete={initialLoadComplete}
-              setProfile = {setProfile}
-              setDirty= {setDirty}
+              setProfile={setProfile}
+              setDirty={setDirty}
+            />
+            <AboutSection
+              editing={editing}
+              profile={profile}
+              updateProfile={updateProfile}
+              toggleEdit={toggleEdit}
+            />
 
+            <Interests
+              editing={editing}
+              profile={profile}
+              updateProfile={updateProfile}
+              toggleEdit={toggleEdit}
+            />
+
+            <Basics
+              editing={editing}
+              profile={profile}
+              setDirty = {setDirty}
+              setProfile={setProfile}
+              toggleEdit={toggleEdit}
             />
           </>
         ) : (

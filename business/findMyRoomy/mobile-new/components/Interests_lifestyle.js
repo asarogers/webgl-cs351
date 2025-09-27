@@ -273,7 +273,7 @@ export const QUIZ = {
             12: { label: "12 months" },
             "18p": { label: "18+ months" },
             mtm: { label: "Month-to-month" },
-            flex: { label: "Flexible / open to discuss" },
+            flex: { label: "Flexible" },
           },
           required: true,
         },

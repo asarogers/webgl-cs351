@@ -31,16 +31,7 @@ import {
  * ========================================================================== */
 
 // Helper: flatten all available interests from INTERESTS
-const getAllInterests = () => {
-  const allInterests = [];
-  INTERESTS.groupsOrder.forEach((groupKey) => {
-    const group = INTERESTS.groups[groupKey];
-    group.optionsOrder.forEach((optionKey) => {
-      allInterests.push(group.options[optionKey]);
-    });
-  });
-  return allInterests;
-};
+
 
 const defaultProfile = {
   profile: {
@@ -114,26 +105,6 @@ const defaultProfile = {
  * PARSING HELPERS
  * ========================================================================== */
 
-const parseBudgetRangeLabel = (label) => {
-  if (!label)
-    return [
-      defaultProfile.basics.budget_range[0],
-      defaultProfile.basics.budget_range[1],
-    ];
-  const clean = String(label).replace(/[\$,]/g, "");
-  const mRange = clean.match(/(\d+)\s*[–-]\s*(\d+)/);
-  if (mRange) return [parseInt(mRange[1], 10), parseInt(mRange[2], 10)];
-  const mUpTo = clean.match(/up to\s*(\d+)/i);
-  if (mUpTo) return [0, parseInt(mUpTo[1], 10)];
-  const mPlus = clean.match(/(\d+)\s*\+/);
-  if (mPlus) return [parseInt(mPlus[1], 10), 0];
-  const lone = clean.match(/^\d+$/);
-  if (lone) return [parseInt(clean, 10), 0];
-  return [
-    defaultProfile.basics.budget_range[0],
-    defaultProfile.basics.budget_range[1],
-  ];
-};
 
 /* ============================================================================
  * UPLOAD HELPERS
@@ -349,26 +320,8 @@ const AccountScreen = () => {
     return Array.from({ length: 5 }, (_, i) => i < filled);
   }, [profile.strength]);
 
-  const formatBudgetRange = (range) => `$${range[0]}-$${range[1]}`;
-  const formatDuration = (months) => {
-    if (!months) return "Open-ended";
-    if (months < 12) return `${months} months`;
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-    if (remainingMonths === 0) return `${years} year${years > 1 ? "s" : ""}`;
-    return `${years}.${
-      Math.round(remainingMonths / 6) * 6 === 6 ? "5" : "0"
-    } years`;
-  };
 
-  const getOptionLabel = (sectionKey, questionKey, optionKey) => {
-    const section = QUIZ.sections[sectionKey];
-    if (!section) return optionKey;
-    const question = section.questions[questionKey];
-    if (!question || !question.options) return optionKey;
-    const option = question.options[optionKey];
-    return option?.label || optionKey;
-  };
+
 
   /* ==========================================================================
    * EDITOR COMPONENTS
@@ -431,50 +384,6 @@ const AccountScreen = () => {
     </View>
   );
 
-  const SingleSelectEditor = ({
-    title,
-    options,
-    selected,
-    onChange,
-    sectionKey,
-    questionKey,
-  }) => (
-    <View style={styles.singleSelectContainer}>
-      <Text style={styles.singleSelectTitle}>{title}</Text>
-      <View style={styles.selectOptionsContainer}>
-        {options.map((optionKey) => {
-          const isSelected = selected === optionKey;
-          const label = getOptionLabel(sectionKey, questionKey, optionKey);
-          return (
-            <TouchableOpacity
-              key={optionKey}
-              style={[
-                styles.selectOption,
-                isSelected && styles.selectOptionSelected,
-              ]}
-              onPress={() => {
-                if (Platform.OS === "ios") Haptics.selectionAsync();
-                onChange(optionKey);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.selectOptionText,
-                  isSelected && styles.selectOptionTextSelected,
-                ]}
-              >
-                {label}
-              </Text>
-              {isSelected && (
-                <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
 
   const ScaleEditor = ({ title, value, onChange, leftAnchor, rightAnchor }) => (
     <View style={styles.scaleEditorContainer}>
@@ -569,15 +478,6 @@ const AccountScreen = () => {
             });
           }}
         />
-
-        {/*
-        <AboutSection
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
-        />
-
         <Interests
           editing={editing}
           profile={profile}
@@ -586,17 +486,18 @@ const AccountScreen = () => {
           getAllInterests={getAllInterests}
         />
 
-        <Basics
+        {/*
+/
+
+        <Interests
           editing={editing}
           profile={profile}
           updateProfile={updateProfile}
           toggleEdit={toggleEdit}
-          QUIZ={QUIZ}
-          SingleSelectEditor={SingleSelectEditor}
-          getOptionLabel={getOptionLabel}
-          formatBudgetRange={formatBudgetRange}
-          formatDuration={formatDuration}
+
         />
+
+        
 
         <Lifestyle
           editing={editing}

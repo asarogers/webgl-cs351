@@ -1221,7 +1221,7 @@ async handleNetworkReconnect() {
           education, company,
           weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
           budget_min, budget_max,
-          move_in_selection, lease_duration, zone_drawn,
+          move_in_selection, lease_duration_months, room_preferences,
           zipcode, location_sharing
         `
         )
@@ -1272,9 +1272,19 @@ async handleNetworkReconnect() {
       }
 
       // Build updates from helper
-      // console.log("before uiProfile", uiProfile)
+      console.log("before uiProfile", uiProfile)
       const dbUpdates = uiProfileToDbUpdates(uiProfile);
-      // console.log("after uiProfile", dbUpdates)
+      console.log("after uiProfile", dbUpdates)
+
+      if (
+        dbUpdates.lease_duration_months === "" ||
+        dbUpdates.lease_duration_months === undefined
+      ) {
+        dbUpdates.lease_duration_months = null;
+      }
+
+      console.log("lease duration after check", dbUpdates.lease_duration_months)
+      
 
       // ✅ FIXED: Handle photos properly
       if (uiProfile.photos && Array.isArray(uiProfile.photos)) {
@@ -1304,7 +1314,6 @@ async handleNetworkReconnect() {
       if (updateError) throw updateError;
 
       // Step 2: Fetch the full record after update
-      // ✅ FIXED: Include "photos" in the SELECT query
       const { data: fullData, error: fetchError } = await supabase
         .from("users")
         .select(
@@ -1314,8 +1323,8 @@ async handleNetworkReconnect() {
           about, interests, photos,
           education, company,
           weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
-          budget_min, budget_max,
-          move_in_selection, lease_duration, zone_drawn, location_sharing, zipcode
+          budget_min, budget_max, room_preferences,
+          move_in_selection, lease_duration_months, zone_drawn, location_sharing, zipcode
         `
         )
         .eq("id", user.id)
@@ -1537,7 +1546,7 @@ async handleNetworkReconnect() {
       //   p.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/[^/]+\//, "")
       // );
 
-      console.log("*** paths", paths)
+      // console.log("*** paths", paths)
 
       // Generate public URLs
       const urls = paths.map(
@@ -1575,20 +1584,6 @@ const formatBudgetRange = (min, max) => {
   return "";
 };
 
-const parseBudgetRange = (label) => {
-  if (!label) return { min: null, max: null };
-  const clean = String(label).replace(/[\$,]/g, "");
-  const mRange = clean.match(/(\d+)\s*[–-]\s*(\d+)/);
-  if (mRange)
-    return { min: parseInt(mRange[1], 10), max: parseInt(mRange[2], 10) };
-  const mUpTo = clean.match(/up to\s*(\d+)/i);
-  if (mUpTo) return { min: null, max: parseInt(mUpTo[1], 10) };
-  const mPlus = clean.match(/(\d+)\s*\+/);
-  if (mPlus) return { min: parseInt(mPlus[1], 10), max: null };
-  const lone = clean.match(/^\d+$/);
-  if (lone) return { min: parseInt(clean, 10), max: null };
-  return { min: null, max: null };
-};
 
 
 
@@ -1664,7 +1659,6 @@ const normalizePhotos = (raw) => {
     })
     .filter(Boolean);
   
-  // console.log("🔍 normalizePhotos output:", result);
   return result;
 };
 
@@ -1735,16 +1729,11 @@ function uiProfileToDbUpdates(ui) {
     }
   }
 
-  if (ui.housing) {
-    if ("budget" in ui.housing) {
-      const { min, max } = parseBudgetRange(ui.housing.budget);
-      updates.budget_min = min;
-      updates.budget_max = max;
-    }
-    if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
-    if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
-    if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
-  }
+  updates.budget_min = ui?.budget_min;
+  updates.budget_max = ui?.budget_max;
+  updates.move_in_selection = ui?.move_in_selection;
+  updates.lease_duration_months = ui?.lease_duration_months;
+  updates.room_preferences = ui?.room_preferences
 
   if (ui.basic) {
     if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
@@ -1811,32 +1800,16 @@ function dbUserToUiProfile(row) {
   const drinks = drinksFromWeekendVibe(row?.weekend_vibe);
   const dogOwner = row?.pet_situation === "dog";
   const petFriendly = !!row?.pet_situation && row.pet_situation !== "none";
-  const nonSmoker = true; // default until tracked explicitly
-
-  // ✅ define zipcode once
+  const nonSmoker = true;
   const zipcode = row?.zipcode || null;
 
-  // if ("photos" in ui) {
-  //   console.log("🔍 uiProfileToDbUpdates photos input:", ui.photos);
-    
-  //   updates.photos = Array.isArray(ui.photos)
-  //     ? ui.photos
-  //         .map((p, i) => {
-  //           if (typeof p === "string") {
-  //             console.log(`✅ uiProfileToDbUpdates[${i}]: string -> ${p}`);
-  //             return p;
-  //           }
-  //           const url = p?.url || p?.uri;
-  //           console.log(`✅ uiProfileToDbUpdates[${i}]: object -> ${url} (from`, p, ')');
-  //           return url;
-  //         })
-  //         .filter(Boolean)
-  //     : undefined;
-    
-  //   console.log("🔍 uiProfileToDbUpdates photos output:", updates.photos);
-  // }
-  
+  const leaseDuration = 
+  row?.lease_duration_months !== null && row?.lease_duration_months !== undefined
+    ? row.lease_duration_months
+    : "";
 
+
+  // console.log("return from dbUSer", leaseDuration);
   return {
     avatarUri: null,
     initials: toInitials(fullName),
@@ -1854,12 +1827,13 @@ function dbUserToUiProfile(row) {
 
     lifestyle: { drinks, dogOwner, nonSmoker, petFriendly },
 
-    housing: {
-      budget: formatBudgetRange(row?.budget_min, row?.budget_max),
-      moveIn: row?.move_in_selection || "",
-      lease: row?.lease_duration || "",
-      roomSize: row?.zone_drawn || "",
-    },
+    budget_min: row?.budget_min || "",
+    budget_max: row?.budget_max || "",
+    move_in_selection: row?.move_in_selection || "",
+    room_preferences: row?.room_preferences || "",
+    lease_duration_months: leaseDuration,
+
+
 
     basic: {
       education: row?.education || "",
@@ -1899,16 +1873,18 @@ function dbUserToUiProfile(row) {
 //     }
 //   }
 
-//   if (ui.housing) {
-//     if ("budget" in ui.housing) {
-//       const { min, max } = parseBudgetRange(ui.housing.budget);
-//       updates.budget_min = min;
-//       updates.budget_max = max;
-//     }
-//     if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
-//     if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
-//     if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
-//   }
+
+
+  // if (ui.housing) {
+  //   if ("budget" in ui.housing) {
+  //     const { min, max } = parseBudgetRange(ui.housing.budget);
+  //     updates.budget_min = min;
+  //     updates.budget_max = max;
+  //   }
+  //   if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
+  //   if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
+  //   if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
+  // }
 
 //   if (ui.basic) {
 //     if ("education" in ui.basic) updates.education = ui.basic.education ?? null;

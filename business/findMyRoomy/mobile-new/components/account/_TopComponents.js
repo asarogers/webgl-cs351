@@ -240,70 +240,7 @@ const additionalStyles = StyleSheet.create({
 */
 
 /* ===================== ABOUT ===================== */
-export const AboutSection = ({
-  editing,
-  profile,
-  updateProfile,
-  toggleEdit,
-}) => (
-  <View style={styles.modernSection}>
-    <View style={styles.modernSectionHeader}>
-      <View style={styles.sectionTitleContainer}>
-        <View style={[styles.iconContainer, { backgroundColor: "#10B981" }]}>
-          <Ionicons name="person-outline" size={18} color="#FFFFFF" />
-        </View>
-        <View>
-          <Text style={styles.modernSectionTitle}>About Me</Text>
-          <Text style={styles.sectionSubtitle}>Tell your story</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        style={[styles.editChip, editing.about && styles.editChipActive]}
-        onPress={() => toggleEdit("about")}
-        activeOpacity={0.7}
-      >
-        <Ionicons
-          name={editing.about ? "checkmark" : "pencil"}
-          size={12}
-          color={editing.about ? "#FFFFFF" : "#6B7280"}
-        />
-        <Text
-          style={[
-            styles.editChipText,
-            editing.about && styles.editChipTextActive,
-          ]}
-        >
-          {editing.about ? "Done" : "Edit"}
-        </Text>
-      </TouchableOpacity>
-    </View>
 
-    {editing.about ? (
-      <View style={styles.textareaContainer}>
-        <TextInput
-          style={styles.modernTextarea}
-          multiline
-          value={profile.about}
-          onChangeText={(t) => updateProfile((p) => ({ ...p, about: t }))}
-          placeholder="Tell people about yourself, your interests, what makes you unique..."
-          placeholderTextColor="#9CA3AF"
-          textAlignVertical="top"
-          maxLength={500}
-        />
-        <View style={styles.textareaFooter}>
-          <Text style={styles.characterCount}>
-            {(profile.about || "").length}/500
-          </Text>
-        </View>
-      </View>
-    ) : (
-      <Text style={styles.aboutText}>
-        {profile.about ||
-          "Add something about yourself to help others get to know you better."}
-      </Text>
-    )}
-  </View>
-);
 
 /* ===================== INTERESTS ===================== */
 export const Interests = ({

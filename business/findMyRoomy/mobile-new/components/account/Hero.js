@@ -83,7 +83,7 @@ export function Hero({
       async function fetchZip() {
         try {
           const z = await getZipCode();
-          console.log("got it");
+          // console.log("got it");
           if (isMounted) setZip(z);
         } catch (err) {
           console.error("Error getting zipcode:", err);
