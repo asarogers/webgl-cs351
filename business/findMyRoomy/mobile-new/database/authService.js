@@ -48,49 +48,52 @@ class AuthService {
   }
 
   // Add to your AuthService class
-async setupAutoRefresh() {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    
-    if (session) {
-      // Calculate refresh time (refresh 5 minutes before expiry)
-      const expiresAt = session.expires_at * 1000;
-      const refreshTime = expiresAt - Date.now() - (5 * 60 * 1000);
-      
-      if (refreshTime > 0) {
-        setTimeout(async () => {
-          const refreshResult = await this.refreshSession();
-          if (refreshResult.success) {
-            // Set up next refresh
-            this.setupAutoRefresh();
-          }
-        }, refreshTime);
-      }
-    }
-  } catch (error) {
-    console.error('Auto-refresh setup failed:', error);
-  }
-}
+  async setupAutoRefresh() {
+    try {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+      if (error) throw error;
 
-// Add to your AuthService class
-async handleNetworkReconnect() {
-  try {
-    const isValid = await this.isSessionValid();
-    if (!isValid) {
-      const refreshResult = await this.refreshSession();
-      if (!refreshResult.success) {
-        // Session can't be refreshed, user needs to re-login
-        await this.signOut();
-        return { needsReauth: true };
+      if (session) {
+        // Calculate refresh time (refresh 5 minutes before expiry)
+        const expiresAt = session.expires_at * 1000;
+        const refreshTime = expiresAt - Date.now() - 5 * 60 * 1000;
+
+        if (refreshTime > 0) {
+          setTimeout(async () => {
+            const refreshResult = await this.refreshSession();
+            if (refreshResult.success) {
+              // Set up next refresh
+              this.setupAutoRefresh();
+            }
+          }, refreshTime);
+        }
       }
+    } catch (error) {
+      console.error("Auto-refresh setup failed:", error);
     }
-    return { needsReauth: false };
-  } catch (error) {
-    console.error('Network reconnect handling failed:', error);
-    return { needsReauth: true };
   }
-}
+
+  // Add to your AuthService class
+  async handleNetworkReconnect() {
+    try {
+      const isValid = await this.isSessionValid();
+      if (!isValid) {
+        const refreshResult = await this.refreshSession();
+        if (!refreshResult.success) {
+          // Session can't be refreshed, user needs to re-login
+          await this.signOut();
+          return { needsReauth: true };
+        }
+      }
+      return { needsReauth: false };
+    } catch (error) {
+      console.error("Network reconnect handling failed:", error);
+      return { needsReauth: true };
+    }
+  }
 
   async refreshSession() {
     try {
@@ -98,23 +101,26 @@ async handleNetworkReconnect() {
       if (error) throw error;
       return { success: true, session: data.session };
     } catch (error) {
-      console.error('Session refresh failed:', error);
+      console.error("Session refresh failed:", error);
       return { success: false, error: error.message };
     }
   }
-  
+
   async isSessionValid() {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (error) throw error;
-      
+
       // Check if session exists and hasn't expired
       if (!session) return false;
-      
+
       const now = Math.floor(Date.now() / 1000);
       return session.expires_at > now;
     } catch (error) {
-      console.error('Session validation failed:', error);
+      console.error("Session validation failed:", error);
       return false;
     }
   }
@@ -527,6 +533,8 @@ async handleNetworkReconnect() {
         dbFormat.substance_free_preference =
           profile.substances.substance_free_preference;
     }
+
+    console.log("dbFormat after:", dbFormat.substances, "\n\n");
 
     // Lifestyle
     if (profile.lifestyle) {
@@ -1216,13 +1224,12 @@ async handleNetworkReconnect() {
           `
           id,
           first_name, last_name, email,
-          about, interests, 
-           photos,
+          about, interests, photos,
           education, company,
           weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
-          budget_min, budget_max,
-          move_in_selection, lease_duration_months, room_preferences,
-          zipcode, location_sharing
+          budget_min, budget_max, room_preferences,
+          move_in_selection, lease_duration_months, zone_drawn, location_sharing, zipcode,
+          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference
         `
         )
 
@@ -1238,10 +1245,9 @@ async handleNetworkReconnect() {
           supabase.storage.from("user-photos").getPublicUrl(path).data.publicUrl
       );
 
-      data.photos = urls
+      data.photos = urls;
 
       const profile = dbUserToUiProfile(data || {});
-
 
       return { success: true, profile, raw: data };
     } catch (err) {
@@ -1272,9 +1278,9 @@ async handleNetworkReconnect() {
       }
 
       // Build updates from helper
-      console.log("before uiProfile", uiProfile)
+      console.log("before uiProfile", uiProfile);
       const dbUpdates = uiProfileToDbUpdates(uiProfile);
-      console.log("after uiProfile", dbUpdates)
+      console.log("after uiProfile", dbUpdates);
 
       if (
         dbUpdates.lease_duration_months === "" ||
@@ -1283,8 +1289,10 @@ async handleNetworkReconnect() {
         dbUpdates.lease_duration_months = null;
       }
 
-      console.log("lease duration after check", dbUpdates.lease_duration_months)
-      
+      console.log(
+        "lease duration after check",
+        dbUpdates.lease_duration_months
+      );
 
       // ✅ FIXED: Handle photos properly
       if (uiProfile.photos && Array.isArray(uiProfile.photos)) {
@@ -1324,8 +1332,9 @@ async handleNetworkReconnect() {
           education, company,
           weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
           budget_min, budget_max, room_preferences,
-          move_in_selection, lease_duration_months, zone_drawn, location_sharing, zipcode
-        `
+          move_in_selection, lease_duration_months, zone_drawn, location_sharing, zipcode,
+          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference
+          `
         )
         .eq("id", user.id)
         .single();
@@ -1367,7 +1376,7 @@ async handleNetworkReconnect() {
         .substring(2)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`; // ✅ always a relative path
 
-      // 
+      //
 
       // Upload file
       const response = await fetch(fileUri);
@@ -1435,8 +1444,6 @@ async handleNetworkReconnect() {
       return { success: false, error: error.message, data: null, url: null };
     }
   }
-
-
 
   // Simplified helper - no need for signed URL logic
   async handleUploadSuccess(data, filePath, bucket) {
@@ -1584,9 +1591,6 @@ const formatBudgetRange = (min, max) => {
   return "";
 };
 
-
-
-
 function computeProfileStrength(row) {
   const checks = [
     !!row?.about,
@@ -1609,23 +1613,24 @@ const drinksFromWeekendVibe = (v) => {
   return ["party", "bar", "drinks", "nightlife"].some((k) => s.includes(k));
 };
 
-const SUPABASE_STORAGE_URL = "https://viscgyefdktuymldptuz.supabase.co/storage/v1/object/public/user-photos/";
+const SUPABASE_STORAGE_URL =
+  "https://viscgyefdktuymldptuz.supabase.co/storage/v1/object/public/user-photos/";
 
 const normalizePhotos = (raw) => {
   console.log("🔍 normalizePhotos input:", raw);
-  
+
   if (!Array.isArray(raw)) {
     console.log("❌ normalizePhotos: input not array");
     return [];
   }
-  
+
   const result = raw
     .map((p, i) => {
       if (typeof p === "string") {
         // Check if it's already a full URL
-        if (p.startsWith('http')) {
+        if (p.startsWith("http")) {
           // Extract the path from the full URL for storage
-          const path = p.replace(SUPABASE_STORAGE_URL, '');
+          const path = p.replace(SUPABASE_STORAGE_URL, "");
           // console.log(`✅ normalizePhotos[${i}]: URL string "${p}" -> {id: ${i}, url: ${p}, path: ${path}}`);
           return { id: String(i), url: p, path };
         } else {
@@ -1635,19 +1640,25 @@ const normalizePhotos = (raw) => {
           return { id: String(i), url, path: p };
         }
       }
-      
+
       if (p && typeof p === "object") {
         const url = p.url || p.uri;
         if (url) {
           // Ensure URL is complete
-          const fullUrl = url.startsWith('http') ? url : `${SUPABASE_STORAGE_URL}${url}`;
+          const fullUrl = url.startsWith("http")
+            ? url
+            : `${SUPABASE_STORAGE_URL}${url}`;
           // Use existing path or extract from URL
-          const path = p.path || (fullUrl.startsWith(SUPABASE_STORAGE_URL) ? fullUrl.replace(SUPABASE_STORAGE_URL, '') : url);
+          const path =
+            p.path ||
+            (fullUrl.startsWith(SUPABASE_STORAGE_URL)
+              ? fullUrl.replace(SUPABASE_STORAGE_URL, "")
+              : url);
           // console.log(`✅ normalizePhotos[${i}]: object -> {id: ${p.id || i}, url: ${fullUrl}, path: ${path}}`);
-          return { 
-            id: p.id || String(i), 
+          return {
+            id: p.id || String(i),
             url: fullUrl,
-            path: path
+            path: path,
           };
         } else {
           console.log(`❌ normalizePhotos[${i}]: object has no url/uri:`, p);
@@ -1658,7 +1669,7 @@ const normalizePhotos = (raw) => {
       return null;
     })
     .filter(Boolean);
-  
+
   return result;
 };
 
@@ -1668,54 +1679,6 @@ function uiProfileToDbUpdates(ui) {
   if ("about" in ui) updates.about = ui.about ?? null;
   if ("interests" in ui)
     updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
-    
-  // ✅ FIXED: Store the actual file path, not the ID or full URL
-  // if ("photos" in ui) {
-  //   console.log("🔍 uiProfileToDbUpdates photos input:", ui.photos);
-    
-  //   updates.photos = Array.isArray(ui.photos)
-  //     ? ui.photos
-  //         .map((p, i) => {
-  //           if (typeof p === "string") {
-  //             // If it's a full URL, extract the path
-  //             if (p.startsWith(SUPABASE_STORAGE_URL)) {
-  //               const path = p.replace(SUPABASE_STORAGE_URL, '');
-  //               console.log(`✅ uiProfileToDbUpdates[${i}]: URL string -> ${path}`);
-  //               return path;
-  //             }
-  //             // If it's already a path, use it
-  //             console.log(`✅ uiProfileToDbUpdates[${i}]: path string -> ${p}`);
-  //             return p;
-  //           }
-            
-  //           // ✅ FIXED: Use 'path' property, fallback to extracting from URL
-  //           if (p && typeof p === "object") {
-  //             if (p.path) {
-  //               console.log(`✅ uiProfileToDbUpdates[${i}]: object with path -> ${p.path}`);
-  //               return p.path;
-  //             } else if (p.url) {
-  //               const path = p.url.startsWith(SUPABASE_STORAGE_URL) 
-  //                 ? p.url.replace(SUPABASE_STORAGE_URL, '')
-  //                 : p.url;
-  //               console.log(`✅ uiProfileToDbUpdates[${i}]: object with URL -> ${path} (extracted from ${p.url})`);
-  //               return path;
-  //             } else if (p.uri) {
-  //               const path = p.uri.startsWith(SUPABASE_STORAGE_URL) 
-  //                 ? p.uri.replace(SUPABASE_STORAGE_URL, '')
-  //                 : p.uri;
-  //               console.log(`✅ uiProfileToDbUpdates[${i}]: object with URI -> ${path} (extracted from ${p.uri})`);
-  //               return path;
-  //             }
-  //           }
-            
-  //           console.log(`❌ uiProfileToDbUpdates[${i}]: invalid photo object:`, p);
-  //           return null;
-  //         })
-  //         .filter(Boolean)
-  //     : undefined;
-    
-  //   console.log("🔍 uiProfileToDbUpdates photos output:", updates.photos);
-  // }
 
   if (ui.lifestyle) {
     if ("drinks" in ui.lifestyle)
@@ -1733,13 +1696,13 @@ function uiProfileToDbUpdates(ui) {
   updates.budget_max = ui?.budget_max;
   updates.move_in_selection = ui?.move_in_selection;
   updates.lease_duration_months = ui?.lease_duration_months;
-  updates.room_preferences = ui?.room_preferences
+  updates.room_preferences = ui?.room_preferences;
 
   if (ui.basic) {
     if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
     if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
   }
-  
+
   if ("location_sharing" in ui) {
     updates.location_sharing = ui.location_sharing;
   }
@@ -1748,6 +1711,21 @@ function uiProfileToDbUpdates(ui) {
     updates.zipcode = ui.location?.replace("ZIP ", "") || null;
   }
 
+  // console.log("dbFormat before:", ui.substances, "\n\n");
+  if (ui.substances) {
+    if (ui.substances.smoking_policy !== undefined)
+      updates.smoking_policy = ui.substances.smoking_policy;
+    if (ui.substances.alcohol_use !== undefined)
+      updates.alcohol_use = ui.substances.alcohol_use;
+    if (ui.substances.cannabis_policy !== undefined)
+      updates.cannabis_policy = ui.substances.cannabis_policy;
+    if (ui.substances.substance_free_preference !== undefined)
+      updates.substance_free_preference =
+        ui.substances.substance_free_preference;
+  }
+
+  // console.log("dbFormat after:", updates.substances, "\n\n");
+
   return updates;
 }
 
@@ -1755,37 +1733,39 @@ function uiProfileToDbUpdates(ui) {
 function ensurePhotoConsistency(photos) {
   return photos.map((photo, i) => {
     if (typeof photo === "string") {
-      if (photo.startsWith('http')) {
+      if (photo.startsWith("http")) {
         return {
           id: String(i),
           url: photo,
-          path: photo.replace(SUPABASE_STORAGE_URL, '')
+          path: photo.replace(SUPABASE_STORAGE_URL, ""),
         };
       } else {
         return {
           id: String(i),
           url: `${SUPABASE_STORAGE_URL}${photo}`,
-          path: photo
+          path: photo,
         };
       }
     }
-    
+
     // Ensure both url and path exist
     let url = photo.url || photo.uri;
     let path = photo.path;
-    
+
     if (!url && path) {
-      url = path.startsWith('http') ? path : `${SUPABASE_STORAGE_URL}${path}`;
+      url = path.startsWith("http") ? path : `${SUPABASE_STORAGE_URL}${path}`;
     }
-    
+
     if (!path && url) {
-      path = url.startsWith(SUPABASE_STORAGE_URL) ? url.replace(SUPABASE_STORAGE_URL, '') : url;
+      path = url.startsWith(SUPABASE_STORAGE_URL)
+        ? url.replace(SUPABASE_STORAGE_URL, "")
+        : url;
     }
-    
+
     return {
       id: photo.id || String(i),
       url,
-      path
+      path,
     };
   });
 }
@@ -1803,13 +1783,26 @@ function dbUserToUiProfile(row) {
   const nonSmoker = true;
   const zipcode = row?.zipcode || null;
 
-  const leaseDuration = 
-  row?.lease_duration_months !== null && row?.lease_duration_months !== undefined
-    ? row.lease_duration_months
-    : "";
+  const leaseDuration =
+    row?.lease_duration_months !== null &&
+    row?.lease_duration_months !== undefined
+      ? row.lease_duration_months
+      : "";
+
+      var substance = {}
+
+        if (row.smoking_policy !== undefined)
+          substance.smoking_policy = row.smoking_policy;
+        if (row.alcohol_use !== undefined)
+          substance.alcohol_use = row.alcohol_use;
+        if (row.cannabis_policy !== undefined)
+          substance.cannabis_policy = row.cannabis_policy;
+        if (row.substance_free_preference !== undefined)
+          substance.substance_free_preference =
+        row.substance_free_preference;
 
 
-  // console.log("return from dbUSer", leaseDuration);
+  // console.log("return from dbUSer", substance);
   return {
     avatarUri: null,
     initials: toInitials(fullName),
@@ -1833,16 +1826,13 @@ function dbUserToUiProfile(row) {
     room_preferences: row?.room_preferences || "",
     lease_duration_months: leaseDuration,
 
-
-
     basic: {
       education: row?.education || "",
       company: row?.company || "",
     },
-    // photos: normalizePhotos(row?.photos),
-    // TODO: delete the nromalziePhotos function
-    photos: (row?.photos),
+    photos: row?.photos,
     strength: computeProfileStrength(row),
+    substances: substance
   };
 }
 
@@ -1873,18 +1863,16 @@ function dbUserToUiProfile(row) {
 //     }
 //   }
 
-
-
-  // if (ui.housing) {
-  //   if ("budget" in ui.housing) {
-  //     const { min, max } = parseBudgetRange(ui.housing.budget);
-  //     updates.budget_min = min;
-  //     updates.budget_max = max;
-  //   }
-  //   if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
-  //   if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
-  //   if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
-  // }
+// if (ui.housing) {
+//   if ("budget" in ui.housing) {
+//     const { min, max } = parseBudgetRange(ui.housing.budget);
+//     updates.budget_min = min;
+//     updates.budget_max = max;
+//   }
+//   if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
+//   if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
+//   if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
+// }
 
 //   if (ui.basic) {
 //     if ("education" in ui.basic) updates.education = ui.basic.education ?? null;

@@ -26,6 +26,8 @@ import { AboutSection } from "@/components/account/AboutScreen";
 import { Interests } from "@/components/account/Interests";
 import { Basics } from "@/components/account/Basics";
 
+import {Substances} from "@/components/account/Substances"
+
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(null);
@@ -86,7 +88,7 @@ export default function ProfileScreen() {
       // );
 
       const res = await authService.updateAccountProfileFromUI(updatedProfile);
-
+      
       if (!res?.success) {
         throw new Error(res?.error || "Failed to save");
       }
@@ -98,7 +100,7 @@ export default function ProfileScreen() {
       // ensure the photos are set before saving as the onload on mount in the useEffect looks for the photos to be without a long path
       res.profile.photos = updatedProfile.photos;
 
-      console.log(res.profile.photos);
+      // console.log(res.profile.photos);
       setProfile(res.profile);
       setDirty(false);
     } catch (e) {
@@ -191,8 +193,17 @@ export default function ProfileScreen() {
             <Basics
               editing={editing}
               profile={profile}
-              setDirty = {setDirty}
+              setDirty={setDirty}
               setProfile={setProfile}
+              toggleEdit={toggleEdit}
+            />
+
+            <Substances
+              editing={editing}
+              profile={profile}
+              setDirty={setDirty}
+              setProfile={setProfile}
+              updateProfile={updateProfile}
               toggleEdit={toggleEdit}
             />
           </>
