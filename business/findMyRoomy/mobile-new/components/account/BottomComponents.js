@@ -440,36 +440,6 @@ export const Lifestyle = ({
   </View>
 );
 
-
-
-/* ===================== PETS ===================== */
-
-
-const SubstanceItem = ({ icon, label, value, status }) => (
-  <View style={styles.substanceItem}>
-    <View style={styles.substanceHeader}>
-      <Text style={styles.substanceIcon}>{icon}</Text>
-      <Text style={styles.substanceLabel}>{label}</Text>
-    </View>
-    <Text
-      style={[
-        styles.substanceValue,
-        status === "good" && styles.substanceValueGood,
-        status === "okay" && styles.substanceValueOkay,
-      ]}
-    >
-      {value}
-    </Text>
-    <View
-      style={[
-        styles.substanceIndicator,
-        status === "good" && styles.substanceIndicatorGood,
-        status === "okay" && styles.substanceIndicatorOkay,
-      ]}
-    />
-  </View>
-);
-
 /* ===================== STYLES (added header/sticky bits used above) ===================== */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },

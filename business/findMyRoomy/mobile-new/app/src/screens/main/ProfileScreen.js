@@ -20,7 +20,7 @@ import ImagePickerComponent from "../../../../components/account/ImagePickerComp
 import { ProfileStrength } from "@/components/account/ProfileStength";
 
 // Extracted UI components
-import { StickyHeader } from "../../../../components/account/_TopComponents";
+import { StickyHeader } from "../../../../components/account/StickyHeader";
 import { Hero } from "../../../../components/account/Hero";
 import { AboutSection } from "@/components/account/AboutScreen";
 import { Interests } from "@/components/account/Interests";
@@ -28,6 +28,7 @@ import { Basics } from "@/components/account/Basics";
 
 import { Substances } from "@/components/account/Substances";
 import { Pets } from "@/components/account/Pets";
+import { Amenities } from "@/components/account/Amenities";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState();
@@ -103,8 +104,6 @@ export default function ProfileScreen() {
   };
 
   const updateProfile = (updater) => {
-    // console.log("callled");
-    // if (initialLoadComplete) {
     setDirty(true);
     // }
     setProfile((prev) => {
@@ -118,7 +117,6 @@ export default function ProfileScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditing((e) => ({ ...e, [key]: !e[key] }));
   };
-
 
   return (
     <>
@@ -193,17 +191,13 @@ export default function ProfileScreen() {
               toggleEdit={toggleEdit}
             />
 
-            {/* <Amenities
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
-          QUIZ={QUIZ}
-          SingleSelectEditor={SingleSelectEditor}
-          MultiSelectEditor={MultiSelectEditor}
-          getOptionLabel={getOptionLabel}
-        />
-         */}
+            <Amenities
+              editing={editing}
+              profile={profile}
+              setProfile={setProfile}
+              toggleEdit={toggleEdit}
+              setDirty={setDirty}
+            />
           </>
         ) : (
           <Text style={{ color: "#6B7280", textAlign: "center" }}>

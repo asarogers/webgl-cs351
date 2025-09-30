@@ -6,7 +6,6 @@ import { Ionicons } from "@expo/vector-icons";
 import MapScreen from "../screens/main/MapScreen";
 import DiscoverScreen from "../screens/main/DiscoveryScreen";
 // import MessagingScreen from "../screens/main/MessagingScreen";
-import AccountScreen from "../screens/main/_AccountScreen";
 import ProfileScreen from "../screens/main/ProfileScreen"
 import SettingsScreen from "../screens/settings/SettingsHome";
 

@@ -1062,7 +1062,8 @@ class AuthService {
           budget_min, budget_max, room_preferences,
           move_in_selection, lease_duration_months, location_sharing, zipcode,
           smoking_policy, alcohol_use, cannabis_policy, substance_free_preference,
-          pet_ownership, pet_tolerance, pet_allergies
+          pet_ownership, pet_tolerance, pet_allergies,
+          furnishing, extras, parking, laundry, bathroom_pref
         `
         )
 
@@ -1165,7 +1166,9 @@ class AuthService {
            sleep_schedule, dish_washing, friends_over,
           budget_min, budget_max, room_preferences,
           move_in_selection, lease_duration_months, location_sharing, zipcode,
-          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference, pet_ownership, pet_tolerance, pet_allergies
+          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference, 
+          pet_ownership, pet_tolerance, pet_allergies,
+          furnishing, extras, parking, laundry, bathroom_pref
           `
         )
         .eq("id", user.id)
@@ -1511,28 +1514,12 @@ function uiProfileToDbUpdates(ui) {
   if ("interests" in ui)
     updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
 
-  // if (ui.lifestyle) {
-  //   if ("drinks" in ui.lifestyle)
-  //     updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
-  //   if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
-  //     updates.pet_situation = ui.lifestyle.dogOwner
-  //       ? "dog"
-  //       : ui.lifestyle.petFriendly
-  //       ? "small_pet"
-  //       : "none";
-  //   }
-  // }
 
   updates.budget_min = ui?.budget_min;
   updates.budget_max = ui?.budget_max;
   updates.move_in_selection = ui?.move_in_selection;
   updates.lease_duration_months = ui?.lease_duration_months;
   updates.room_preferences = ui?.room_preferences;
-
-  // if (ui.basic) {
-  //   if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
-  //   if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
-  // }
 
   if ("location_sharing" in ui) {
     updates.location_sharing = ui.location_sharing;
@@ -1563,6 +1550,26 @@ function uiProfileToDbUpdates(ui) {
     if (ui.pets.pet_allergies !== undefined)
       updates.pet_allergies = ui.pets.pet_allergies;
   }
+
+  if (ui.amenities) {
+    if (ui.amenities.furnishing !== undefined)
+      updates.furnishing = ui.amenities.furnishing;
+
+    if (ui.amenities.extras !== undefined)
+      updates.extras = ui.amenities.extras;
+
+    if (ui.amenities.parking !== undefined)
+      updates.parking = ui.amenities.parking;
+
+    if (ui.amenities.laundry !== undefined)
+      updates.laundry = ui.amenities.laundry;
+
+    // /
+    if (ui.amenities.bathroom_pref !== undefined)
+      updates.bathroom_pref = ui.amenities.bathroom_pref;
+
+  }
+
 
   // console.log("\n\ndbFormat after:", updates, "\n\n");
 
@@ -1629,7 +1636,7 @@ function dbUserToUiProfile(row) {
       ? row.lease_duration_months
       : "";
 
-  var substance = {}, pets = {};
+  var substance = {}, pets = {}, amenities= {};
 
   if (row.smoking_policy !== undefined)
     substance.smoking_policy = row.smoking_policy;
@@ -1646,7 +1653,23 @@ function dbUserToUiProfile(row) {
   if (row?.pet_allergies !== undefined)
     pets.pet_allergies = row.pet_allergies;
 
-  // console.log(pets)
+
+    if (row?.furnishing !== undefined)
+      amenities.furnishing = row?.furnishing;
+
+    if (row?.extras !== undefined)
+      amenities.extras = row?.extras;
+
+    if (row?.parking !== undefined)
+      amenities.parking = row?.parking;
+
+    if (row?.laundry !== undefined)
+      amenities.laundry = row?.laundry;
+
+    if (row?.bathroom_pref !== undefined)
+      amenities.bathroom_pref = row?.bathroom_pref;
+
+
 
   return {
     avatarUri: null,
@@ -1671,11 +1694,7 @@ function dbUserToUiProfile(row) {
     room_preferences: row?.room_preferences || "",
     lease_duration_months: leaseDuration,
     pets: pets,
-
-    // basic: {
-    //   education: row?.education || "",
-    //   company: row?.company || "",
-    // },
+    amenities:amenities,
     photos: row?.photos,
     strength: computeProfileStrength(row),
     substances: substance,

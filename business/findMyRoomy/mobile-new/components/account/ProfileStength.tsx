@@ -4,27 +4,54 @@ import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 /* ============================================================================
  * TYPES & INTERFACES
  * ========================================================================== */
+/* ============================================================================
+ * TYPES & INTERFACES
+ * ========================================================================== */
 interface ProfileData {
-  first_name?: string;
-  last_name?: string;
+  name?: string;
   about?: string;
-  photos?: string[];
+  photos?: { id: string; uri: string }[];
   interests?: string[];
   budget_min?: number;
   budget_max?: number;
-
-  company?: string;
-
-  sleep_schedule?: string;
+  location?: string;
+  rawZipcode?: string;
   location_sharing?: boolean;
-  zipcode?: string;
+
+  lifestyle?: {
+    nonSmoker?: boolean;
+    sleep_schedule?: string;
+    dish_washing?: string;
+    friends_over?: string;
+  };
+
+  substances?: {
+    smoking_policy?: string;
+    alcohol_use?: string;
+    cannabis_policy?: string;
+    substance_free_preference?: boolean;
+  };
+
+  pets?: {
+    pet_ownership?: (string | { other: string })[];
+    pet_tolerance?: (string | { other: string })[];
+    pet_allergies?: (string | { other: string })[];
+  };
+
+  amenities?: {
+    furnishing?: string;
+    extras?: string[];
+    parking?: string;
+    laundry?: string;
+    bathroom_pref?: string;
+  };
 }
 
 interface ProfileStrengthItem {
   id: string;
   label: string;
   completed: boolean;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 /* ============================================================================
@@ -34,77 +61,155 @@ export function computeProfileStrength(profile: ProfileData | null | undefined):
   score: number;
   percentage: number;
   items: ProfileStrengthItem[];
+  nextAction: ProfileStrengthItem | null;
 } {
-  if (!profile) {
-    return { score: 0, percentage: 0, items: [] };
-  }
+  if (!profile) return { score: 0, percentage: 0, items: [], nextAction: null };
 
   const items: ProfileStrengthItem[] = [
+    // 🔑 Core Identity
     {
-      id: 'name',
-      label: 'Full name',
-      completed: Boolean(profile.first_name && profile.last_name),
-      priority: 'high'
+      id: "name",
+      label: "Full name",
+      completed: Boolean(profile.name),
+      priority: "high",
     },
     {
-      id: 'photos',
-      label: 'Profile photos',
+      id: "photos",
+      label: "Profile photos",
       completed: Array.isArray(profile.photos) && profile.photos.length > 0,
-      priority: 'high'
+      priority: "high",
     },
     {
-      id: 'about',
-      label: 'About section (20+ characters)',
+      id: "about",
+      label: "About section (20+ characters)",
       completed: Boolean(profile.about && profile.about.trim().length > 20),
-      priority: 'high'
+      priority: "high",
     },
+
+    // 🎯 Interests & Budget
     {
-      id: 'interests',
-      label: 'Interests (3+ selected)',
+      id: "interests",
+      label: "Interests (3+ selected)",
       completed: Array.isArray(profile.interests) && profile.interests.length >= 3,
-      priority: 'medium'
+      priority: "medium",
     },
     {
-      id: 'budget',
-      label: 'Budget information',
-      completed: Boolean(profile.budget_min || profile.budget_max),
-      priority: 'medium'
+      id: "budget",
+      label: "Budget information",
+      completed: Boolean(profile.budget_min && profile.budget_max),
+      priority: "medium",
+    },
+
+    // 🏠 Lifestyle
+    {
+      id: "nonSmoker",
+      label: "Non-smoker",
+      completed: Boolean(profile.lifestyle?.nonSmoker),
+      priority: "medium",
+    },
+   
+
+    // 📍 Location
+    {
+      id: "location",
+      label: "Location details",
+      completed: Boolean(profile.location_sharing && profile.rawZipcode),
+      priority: "medium",
+    },
+
+    // 🚬 Substances
+    {
+      id: "smoking_policy",
+      label: "Smoking policy",
+      completed: Boolean(profile.substances?.smoking_policy),
+      priority: "low",
     },
     {
-      id: 'work_education',
-      label: 'Work or education',
-      completed: Boolean( profile.company),
-      priority: 'medium'
+      id: "alcohol_use",
+      label: "Alcohol policy",
+      completed: Boolean(profile.substances?.alcohol_use),
+      priority: "low",
     },
     {
-      id: 'lifestyle',
-      label: 'Lifestyle preferences',
-      completed: true,
-      priority: 'low'
+      id: "cannabis_policy",
+      label: "Cannabis policy",
+      completed: Boolean(profile.substances?.cannabis_policy),
+      priority: "low",
+    },
+
+    // 🐶 Pets
+    {
+      id: "pet_ownership",
+      label: "Pet ownership",
+      completed: Array.isArray(profile.pets?.pet_ownership) && profile.pets?.pet_ownership.length > 0,
+      priority: "low",
     },
     {
-      id: 'schedule',
-      label: 'Schedule preferences',
-      completed: Boolean( profile.sleep_schedule),
-      priority: 'low'
+      id: "pet_tolerance",
+      label: "Comfort with roommate's pets",
+      completed: Array.isArray(profile.pets?.pet_tolerance) && profile.pets?.pet_tolerance.length > 0,
+      priority: "low",
     },
     {
-      id: 'location',
-      label: 'Location details',
-      completed: Boolean(profile.location_sharing && profile.zipcode),
-      priority: 'low'
-    }
+      id: "pet_allergies",
+      label: "Pet allergies",
+      completed: Array.isArray(profile.pets?.pet_allergies) && profile.pets?.pet_allergies.length > 0,
+      priority: "low",
+    },
+
+    // 🛋 Amenities
+    {
+      id: "furnishing",
+      label: "Furnishing preference",
+      completed: Boolean(profile.amenities?.furnishing),
+      priority: "low",
+    },
+    {
+      id: "extras",
+      label: "Nice-to-haves",
+      completed: Array.isArray(profile.amenities?.extras) && profile.amenities?.extras.length > 0,
+      priority: "low",
+    },
+    {
+      id: "parking",
+      label: "Parking preference",
+      completed: Boolean(profile.amenities?.parking),
+      priority: "low",
+    },
+    {
+      id: "laundry",
+      label: "Laundry preference",
+      completed: Boolean(profile.amenities?.laundry),
+      priority: "low",
+    },
+    {
+      id: "bathroom_pref",
+      label: "Bathroom preference",
+      completed: Boolean(profile.amenities?.bathroom_pref),
+      priority: "low",
+    },
   ];
 
-  const completedCount = items.filter(item => item.completed).length;
+  const completedCount = items.filter((item) => item.completed).length;
   const percentage = Math.round((completedCount / items.length) * 100);
+
+  // Find next recommended action (prioritize high > medium > low)
+  const incompleteItems = items.filter((item) => !item.completed);
+  const nextAction = 
+    incompleteItems.find((item) => item.priority === "high") ||
+    incompleteItems.find((item) => item.priority === "medium") ||
+    incompleteItems.find((item) => item.priority === "low") ||
+    null;
 
   return {
     score: completedCount,
     percentage,
-    items
+    items,
+    nextAction,
   };
 }
+
+
 
 /* ============================================================================
  * STRENGTH LEVEL CONFIGURATION
@@ -140,7 +245,7 @@ export function ProfileStrength({
   onPress,
   showDetails = false 
 }: ProfileStrengthProps) {
-  const { percentage, items } = computeProfileStrength(profile);
+  const { percentage, items, nextAction } = computeProfileStrength(profile);
   const dots = useProfileStrengthDots(percentage);
   const strengthLevel = getStrengthLevel(percentage);
   
@@ -187,6 +292,20 @@ export function ProfileStrength({
         </View>
       </View>
 
+      {nextAction && !showDetails && (
+        <View style={styles.nextActionBanner}>
+          <View style={styles.nextActionHeader}>
+            <Text style={styles.nextActionTitle}>Next Step</Text>
+            {nextAction.priority === 'high' && (
+              <View style={styles.highPriorityBadge}>
+                <Text style={styles.highPriorityText}>RECOMMENDED</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.nextActionText}>{nextAction.label}</Text>
+        </View>
+      )}
+
       {showDetails && (
         <View style={styles.detailsSection}>
           <Text style={styles.detailsTitle}>Profile Sections</Text>
@@ -209,8 +328,16 @@ export function ProfileStrength({
               {incompleteItems.map(item => (
                 <View key={item.id} style={styles.itemRow}>
                   <View style={[styles.itemDot, styles.itemDotIncomplete]} />
-                  <Text style={styles.itemTextIncomplete}>{item.label}</Text>
-                  {item.priority === 'high' && (
+                  <Text style={[
+                    styles.itemTextIncomplete,
+                    item.id === nextAction?.id && styles.itemTextNext
+                  ]}>
+                    {item.label}
+                  </Text>
+                  {item.id === nextAction?.id && (
+                    <Text style={styles.nextBadge}>NEXT</Text>
+                  )}
+                  {item.priority === 'high' && item.id !== nextAction?.id && (
                     <Text style={styles.priorityBadge}>Important</Text>
                   )}
                 </View>
@@ -300,6 +427,46 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "right",
   },
+  nextActionBanner: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  nextActionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  nextActionTitle: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  nextActionText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 15,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  highPriorityBadge: {
+    backgroundColor: "rgba(239,68,68,0.25)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.4)",
+  },
+  highPriorityText: {
+    color: "#EF4444",
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
   detailsSection: {
     marginTop: 24,
     paddingTop: 20,
@@ -355,6 +522,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     flex: 1,
+  },
+  itemTextNext: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  nextBadge: {
+    backgroundColor: "rgba(59,130,246,0.25)",
+    color: "#3B82F6",
+    fontSize: 10,
+    fontWeight: "700",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    borderWidth: 1,
+    borderColor: "rgba(59,130,246,0.4)",
   },
   priorityBadge: {
     backgroundColor: "rgba(239,68,68,0.2)",
