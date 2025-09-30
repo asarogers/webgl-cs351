@@ -6,7 +6,6 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -15,10 +14,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
 import authService from "../../../../database/authService";
 import BlockedReportedUsersScreen from "./Reported_Blocked_Users";
 import SettingsHeader from "./SettingsHeader";
+import TermsAndConditions from "./TermsAndConditions";
+import PrivacyPolicy from "./Privacy";
 
 const colors = {
   primary: "#3B82F6",
@@ -41,17 +42,13 @@ const colors = {
   warning: "#F59E0B",
 };
 
-const DOCUMENT_URLS = {
-  terms: "https://YOUR_TERMS_DOCUMENT_URL.pdf",
-  privacy: "https://YOUR_PRIVACY_DOCUMENT_URL.pdf",
-};
-
 export const PrivacyAndSafety = ({ setPage }) => {
   const [profileHidden, setProfileHidden] = useState(false);
   const [isLoadingProfileHidden, setIsLoadingProfileHidden] = useState(true);
   const [showFlaggedUsers, setShowFlaggedUsers] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
-  // Only fetch profile visibility (not block/report flags)
   useEffect(() => {
     let mounted = true;
     async function loadProfileVisibility() {
@@ -63,7 +60,9 @@ export const PrivacyAndSafety = ({ setPage }) => {
       setIsLoadingProfileHidden(false);
     }
     loadProfileVisibility();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleHideProfile = async (value) => {
@@ -80,39 +79,6 @@ export const PrivacyAndSafety = ({ setPage }) => {
       Alert.alert("Error", "Failed to update profile visibility. Try again.");
       setProfileHidden(!value);
     }
-  };
-
-  const handleDocumentDownload = (type) => {
-    const documentName =
-      type === "terms" ? "Terms and Conditions" : "Privacy Policy";
-    const url = DOCUMENT_URLS[type];
-
-    Alert.alert(
-      `Download ${documentName}`,
-      `Would you like to download our ${documentName} document? This will open in your default browser or PDF viewer.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Download",
-          style: "default",
-          onPress: () => {
-            if (url) {
-              Linking.openURL(url).catch(() => {
-                Alert.alert(
-                  "Download Failed",
-                  "Unable to download the document. Please check your internet connection and try again."
-                );
-              });
-            } else {
-              Alert.alert(
-                "Document Unavailable",
-                "The document is currently not available for download."
-              );
-            }
-          },
-        },
-      ]
-    );
   };
 
   return (
@@ -136,11 +102,15 @@ export const PrivacyAndSafety = ({ setPage }) => {
             onPress={() => setShowFlaggedUsers(true)}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconContainer, { backgroundColor: "#FEF2F2" }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: "#FEF2F2" }]}
+            >
               <MaterialIcons name="block" size={22} color={colors.error} />
             </View>
             <View style={styles.contentContainer}>
-              <Text style={styles.actionLabel}>Manage Blocked/Reported Users</Text>
+              <Text style={styles.actionLabel}>
+                Manage Blocked/Reported Users
+              </Text>
               <Text style={styles.actionSubtitle}>
                 Review and manage users you've blocked or reported
               </Text>
@@ -193,9 +163,10 @@ export const PrivacyAndSafety = ({ setPage }) => {
         {/* Legal Documents Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Legal Documents</Text>
+
           <TouchableOpacity
             style={styles.linkCard}
-            onPress={() => handleDocumentDownload("terms")}
+            onPress={() => setShowTerms(true)}
             activeOpacity={0.7}
           >
             <View
@@ -210,12 +181,12 @@ export const PrivacyAndSafety = ({ setPage }) => {
             <View style={styles.contentContainer}>
               <Text style={styles.linkLabel}>Terms and Conditions</Text>
               <Text style={styles.linkSubtitle}>
-                Download our complete terms of service
+                View our complete terms of service
               </Text>
             </View>
-            <View style={styles.downloadIndicator}>
+            <View style={styles.viewIndicator}>
               <Ionicons
-                name="download-outline"
+                name="chevron-forward"
                 size={18}
                 color={colors.grayMedium}
               />
@@ -224,7 +195,7 @@ export const PrivacyAndSafety = ({ setPage }) => {
 
           <TouchableOpacity
             style={styles.linkCard}
-            onPress={() => handleDocumentDownload("privacy")}
+            onPress={() => setShowPrivacy(true)}
             activeOpacity={0.7}
           >
             <View
@@ -239,12 +210,12 @@ export const PrivacyAndSafety = ({ setPage }) => {
             <View style={styles.contentContainer}>
               <Text style={styles.linkLabel}>Privacy Policy</Text>
               <Text style={styles.linkSubtitle}>
-                Download our privacy and data protection policy
+                View our privacy and data protection policy
               </Text>
             </View>
-            <View style={styles.downloadIndicator}>
+            <View style={styles.viewIndicator}>
               <Ionicons
-                name="download-outline"
+                name="chevron-forward"
                 size={18}
                 color={colors.grayMedium}
               />
@@ -276,31 +247,41 @@ export const PrivacyAndSafety = ({ setPage }) => {
         </View>
       </ScrollView>
 
-      {/* Modal for Blocked/Reported Users */}
+      {/* Modals - Added presentationStyle="fullScreen" */}
       <Modal
         visible={showFlaggedUsers}
         animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setShowFlaggedUsers(false)}
       >
         <BlockedReportedUsersScreen onBack={() => setShowFlaggedUsers(false)} />
+      </Modal>
+
+      <Modal
+        visible={showTerms}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setShowTerms(false)}
+      >
+        <TermsAndConditions onBack={() => setShowTerms(false)} />
+      </Modal>
+
+      <Modal
+        visible={showPrivacy}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setShowPrivacy(false)}
+      >
+        <PrivacyPolicy onBack={() => setShowPrivacy(false)} />
       </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  section: {
-    marginBottom: 32,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  scrollView: { flex: 1, paddingHorizontal: 20, marginTop: 20 },
+  section: { marginBottom: 32 },
   sectionTitle: {
     fontSize: 13,
     fontWeight: "700",
@@ -317,11 +298,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
     borderWidth: 1,
     borderColor: colors.grayLight,
   },
@@ -331,11 +307,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
     borderWidth: 1,
     borderColor: colors.grayLight,
   },
@@ -346,11 +317,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
     borderWidth: 1,
     borderColor: colors.grayLight,
   },
@@ -362,11 +328,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: colors.grayLight,
-    shadowColor: "#000",
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
   },
   iconContainer: {
     width: 44,
@@ -376,43 +337,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 16,
   },
-  contentContainer: {
-    flex: 1,
-  },
-  actionLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.navy,
-    marginBottom: 4,
-  },
-  actionSubtitle: {
-    fontSize: 13,
-    color: colors.grayMedium,
-    lineHeight: 18,
-  },
-  toggleTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.navy,
-    marginBottom: 4,
-  },
-  toggleSubtitle: {
-    fontSize: 13,
-    color: colors.grayMedium,
-    lineHeight: 18,
-  },
-  linkLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.navy,
-    marginBottom: 4,
-  },
-  linkSubtitle: {
-    fontSize: 13,
-    color: colors.grayMedium,
-    lineHeight: 18,
-  },
-  downloadIndicator: {
+  contentContainer: { flex: 1 },
+  actionLabel: { fontSize: 16, fontWeight: "600", color: colors.navy },
+  actionSubtitle: { fontSize: 13, color: colors.grayMedium },
+  toggleTitle: { fontSize: 16, fontWeight: "700", color: colors.navy },
+  toggleSubtitle: { fontSize: 13, color: colors.grayMedium },
+  linkLabel: { fontSize: 16, fontWeight: "600", color: colors.navy },
+  linkSubtitle: { fontSize: 13, color: colors.grayMedium },
+  viewIndicator: {
     width: 32,
     height: 32,
     borderRadius: 8,
@@ -420,17 +352,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tipTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.navy,
-    marginBottom: 6,
-  },
-  tipText: {
-    fontSize: 13,
-    color: colors.grayMedium,
-    lineHeight: 19,
-  },
+  tipTitle: { fontSize: 15, fontWeight: "600", color: colors.navy },
+  tipText: { fontSize: 13, color: colors.grayMedium },
 });
 
 export default PrivacyAndSafety;

@@ -53,20 +53,20 @@ const SETTINGS_SECTIONS = [
       },
     ],
   },
-  {
-    title: "Applications",
-    titleColor: "#F59E42", // Unique amber
-    data: [
-      {
-        key: "applications",
-        label: "Applications",
-        subtitle: "Manage your apartment and roommate applications",
-        icon: <FontAwesome5 name="file-alt" size={22} color="#F59E42" />,
-        bgSolid: "#FEF3C7", // Soft light amber background
-        iconBg: "#F59E42",
-      },
-    ],
-  },
+  // {
+  //   title: "Applications",
+  //   titleColor: "#F59E42", // Unique amber
+  //   data: [
+  //     {
+  //       key: "applications",
+  //       label: "Applications",
+  //       subtitle: "Manage your apartment and roommate applications",
+  //       icon: <FontAwesome5 name="file-alt" size={22} color="#F59E42" />,
+  //       bgSolid: "#FEF3C7", // Soft light amber background
+  //       iconBg: "#F59E42",
+  //     },
+  //   ],
+  // },
 
   {
     title: "Legal & Safety",
@@ -253,8 +253,8 @@ const SettingsScreen = () => {
       return <ProfileManagement setPage={setPage} />;
     case "notifications":
       return <Notifications setPage={setPage} />;
-    case "applications":
-      return <ApplicationManager setPage={setPage} />;
+    // case "applications":
+    //   return <ApplicationManager setPage={setPage} />;
     case "privacy":
       return <PrivacyAndSafety setPage={setPage} />;
     case "feedback": // FeedbackAndAbout
