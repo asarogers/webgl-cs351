@@ -12,10 +12,9 @@ interface ProfileData {
   interests?: string[];
   budget_min?: number;
   budget_max?: number;
-  education?: string;
+
   company?: string;
-  pet_situation?: string;
-  weekend_vibe?: string;
+
   sleep_schedule?: string;
   location_sharing?: boolean;
   zipcode?: string;
@@ -74,19 +73,19 @@ export function computeProfileStrength(profile: ProfileData | null | undefined):
     {
       id: 'work_education',
       label: 'Work or education',
-      completed: Boolean(profile.education || profile.company),
+      completed: Boolean( profile.company),
       priority: 'medium'
     },
     {
       id: 'lifestyle',
       label: 'Lifestyle preferences',
-      completed: Boolean(profile.pet_situation && profile.pet_situation !== "none"),
+      completed: true,
       priority: 'low'
     },
     {
       id: 'schedule',
       label: 'Schedule preferences',
-      completed: Boolean(profile.weekend_vibe || profile.sleep_schedule),
+      completed: Boolean( profile.sleep_schedule),
       priority: 'low'
     },
     {

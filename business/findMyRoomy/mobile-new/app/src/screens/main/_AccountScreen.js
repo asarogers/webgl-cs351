@@ -91,10 +91,8 @@ const defaultProfile = {
     lease_duration: null,
     location_sharing: true,
     move_in_selection: null,
-    pet_situation: "none",
     photos: [],
     sleep_schedule: "flexi",
-    weekend_vibe: null,
     zipcode: "60645",
     zone_drawn: null,
   },
@@ -327,62 +325,7 @@ const AccountScreen = () => {
    * EDITOR COMPONENTS
    * ======================================================================== */
 
-  const MultiSelectEditor = ({
-    title,
-    options,
-    selected,
-    onChange,
-    exclusiveWith = [],
-    sectionKey,
-    questionKey,
-  }) => (
-    <View style={styles.multiSelectContainer}>
-      <Text style={styles.multiSelectTitle}>{title}</Text>
-      <View style={styles.selectableTagsContainer}>
-        {options.map((optionKey) => {
-          const isSelected = selected.includes(optionKey);
-          const label = getOptionLabel(sectionKey, questionKey, optionKey);
-          return (
-            <TouchableOpacity
-              key={optionKey}
-              style={[styles.choiceTag, isSelected && styles.choiceTagSelected]}
-              onPress={() => {
-                if (Platform.OS === "ios") Haptics.selectionAsync();
-                let nextSelected = isSelected
-                  ? selected.filter((i) => i !== optionKey)
-                  : [...selected, optionKey];
 
-                exclusiveWith.forEach(([exclusive, conflicting]) => {
-                  if (optionKey === exclusive) {
-                    nextSelected = nextSelected.filter(
-                      (i) => !conflicting.includes(i)
-                    );
-                  } else if (conflicting.includes(optionKey)) {
-                    nextSelected = nextSelected.filter((i) => i !== exclusive);
-                  }
-                });
-
-                onChange(nextSelected);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.choiceTagText,
-                  isSelected && styles.choiceTagTextSelected,
-                ]}
-              >
-                {label}
-              </Text>
-              {isSelected && (
-                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
 
 
   const ScaleEditor = ({ title, value, onChange, leftAnchor, rightAnchor }) => (
@@ -487,59 +430,8 @@ const AccountScreen = () => {
         />
 
         {/*
-/
 
-        <Interests
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
 
-        />
-
-        
-
-        <Lifestyle
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
-          QUIZ={QUIZ}
-          SingleSelectEditor={SingleSelectEditor}
-          ScaleEditor={ScaleEditor}
-          getOptionLabel={getOptionLabel}
-        />
-
-        <Substances
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
-          QUIZ={QUIZ}
-          SingleSelectEditor={SingleSelectEditor}
-          getOptionLabel={getOptionLabel}
-        />
-
-        <Pets
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
-          QUIZ={QUIZ}
-          MultiSelectEditor={MultiSelectEditor}
-          getOptionLabel={getOptionLabel}
-        />
-
-        <Amenities
-          editing={editing}
-          profile={profile}
-          updateProfile={updateProfile}
-          toggleEdit={toggleEdit}
-          QUIZ={QUIZ}
-          SingleSelectEditor={SingleSelectEditor}
-          MultiSelectEditor={MultiSelectEditor}
-          getOptionLabel={getOptionLabel}
-        />
 
 
         <TouchableOpacity

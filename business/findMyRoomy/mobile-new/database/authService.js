@@ -440,172 +440,8 @@ class AuthService {
       return null;
     }
   }
-  async updateAccountProfilePatch(patch, options = {}) {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) throw new Error("No authenticated user");
 
-      // Add timestamp to all updates
-      const dataToUpdate = {
-        ...patch,
-        updated_at: new Date().toISOString(),
-      };
 
-      const { data, error } = await supabase
-        .from("users")
-        .update(dataToUpdate)
-        .eq("id", user.id)
-        .select(
-          `
-          id, first_name, last_name, email, avatarUri, initials, name, location,
-          about, interests, strength,
-          substances, lifestyle, basics, pets, amenities,
-          education, company, weekend_vibe, sleep_schedule, dish_washing, 
-          friends_over, pet_situation, budget_min, budget_max,
-          move_in_selection, lease_duration, zone_drawn, location_sharing,
-          verification_level, is_visible, intent, onboarding
-        `
-        )
-        .single();
-
-      if (error) throw error;
-
-      return { success: true, data };
-    } catch (err) {
-      console.error("updateAccountProfilePatch Error:", err);
-      return {
-        success: false,
-        error: err.message || "Failed to update account profile",
-      };
-    }
-  }
-
-  async updateAccountProfileFull(profileData, options = {}) {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) throw new Error("No authenticated user");
-
-      // Convert the AccountScreen profile format to database format
-      const dbUpdates = this.convertAccountProfileToDbFormat(profileData);
-
-      // Use the same update method but with full profile data
-      return await this.updateAccountProfilePatch(dbUpdates, {
-        ...options,
-        isFull: true,
-      });
-    } catch (err) {
-      console.error("updateAccountProfileFull Error:", err);
-      return {
-        success: false,
-        error: err.message || "Failed to update full account profile",
-      };
-    }
-  }
-
-  convertAccountProfileToDbFormat(profile) {
-    const dbFormat = {};
-
-    // Basic profile info
-    if (profile.avatarUri !== undefined) dbFormat.avatarUri = profile.avatarUri;
-    if (profile.about !== undefined) dbFormat.about = profile.about;
-    if (profile.interests !== undefined)
-      dbFormat.interests = Array.isArray(profile.interests)
-        ? profile.interests
-        : [];
-
-    // Substances
-    if (profile.substances) {
-      if (profile.substances.smoking_policy !== undefined)
-        dbFormat.smoking_policy = profile.substances.smoking_policy;
-      if (profile.substances.alcohol_use !== undefined)
-        dbFormat.alcohol_use = profile.substances.alcohol_use;
-      if (profile.substances.cannabis_policy !== undefined)
-        dbFormat.cannabis_policy = profile.substances.cannabis_policy;
-      if (profile.substances.substance_free_preference !== undefined)
-        dbFormat.substance_free_preference =
-          profile.substances.substance_free_preference;
-    }
-
-    console.log("dbFormat after:", dbFormat.substances, "\n\n");
-
-    // Lifestyle
-    if (profile.lifestyle) {
-      if (profile.lifestyle.cleanliness_level !== undefined)
-        dbFormat.cleanliness_level = profile.lifestyle.cleanliness_level;
-      if (profile.lifestyle.cleaning_frequency !== undefined)
-        dbFormat.cleaning_frequency = profile.lifestyle.cleaning_frequency;
-      if (profile.lifestyle.home_presence !== undefined)
-        dbFormat.home_presence = profile.lifestyle.home_presence;
-      if (profile.lifestyle.sleep_rhythm !== undefined)
-        dbFormat.sleep_rhythm = profile.lifestyle.sleep_rhythm;
-      if (profile.lifestyle.guest_frequency !== undefined)
-        dbFormat.guest_frequency = profile.lifestyle.guest_frequency;
-      if (profile.lifestyle.overnight_guests !== undefined)
-        dbFormat.overnight_guests = profile.lifestyle.overnight_guests;
-      if (profile.lifestyle.noise_tolerance !== undefined)
-        dbFormat.noise_tolerance = profile.lifestyle.noise_tolerance;
-    }
-
-    // Basics/Housing
-    if (profile.basics) {
-      if (profile.basics.budget_range !== undefined) {
-        dbFormat.budget_min = profile.basics.budget_range[0] || null;
-        dbFormat.budget_max = profile.basics.budget_range[1] || null;
-      }
-      if (profile.basics.move_in_timeline !== undefined)
-        dbFormat.move_in_selection = profile.basics.move_in_timeline;
-      if (profile.basics.minimum_stay !== undefined)
-        dbFormat.minimum_stay = profile.basics.minimum_stay;
-      if (profile.basics.maximum_stay !== undefined)
-        dbFormat.maximum_stay = profile.basics.maximum_stay;
-      if (profile.basics.lease_duration !== undefined)
-        dbFormat.lease_duration = profile.basics.lease_duration;
-      if (profile.basics.room_type !== undefined)
-        dbFormat.room_type = profile.basics.room_type;
-    }
-
-    // Pets
-    if (profile.pets) {
-      if (profile.pets.pet_ownership !== undefined)
-        dbFormat.pet_ownership = Array.isArray(profile.pets.pet_ownership)
-          ? profile.pets.pet_ownership
-          : [];
-      if (profile.pets.pet_tolerance !== undefined)
-        dbFormat.pet_tolerance = Array.isArray(profile.pets.pet_tolerance)
-          ? profile.pets.pet_tolerance
-          : [];
-      if (profile.pets.pet_allergies !== undefined)
-        dbFormat.pet_allergies = Array.isArray(profile.pets.pet_allergies)
-          ? profile.pets.pet_allergies
-          : [];
-    }
-
-    // Amenities
-    if (profile.amenities) {
-      if (profile.amenities.bathroom_pref !== undefined)
-        dbFormat.bathroom_pref = profile.amenities.bathroom_pref;
-      if (profile.amenities.laundry !== undefined)
-        dbFormat.laundry = profile.amenities.laundry;
-      if (profile.amenities.parking !== undefined)
-        dbFormat.parking = profile.amenities.parking;
-      if (profile.amenities.furnishing !== undefined)
-        dbFormat.furnishing = profile.amenities.furnishing;
-      if (profile.amenities.extras !== undefined)
-        dbFormat.extras = Array.isArray(profile.amenities.extras)
-          ? profile.amenities.extras
-          : [];
-    }
-
-    return dbFormat;
-  }
 
   // Add this method to your authService.js
   async saveQuizAnswer(field, value) {
@@ -643,17 +479,14 @@ class AuthService {
       if (!user) throw new Error("No authenticated user");
 
       const fields = [
-        "weekend_vibe",
         "sleep_schedule",
         "dish_washing",
         "friends_over",
-        "pet_situation",
         "move_in_selection",
         "lease_duration",
         "budget_min",
         "budget_max",
         "roommates",
-        "zone_drawn",
       ];
 
       const { data, error } = await supabase
@@ -1225,11 +1058,11 @@ class AuthService {
           id,
           first_name, last_name, email,
           about, interests, photos,
-          education, company,
-          weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
+          sleep_schedule, dish_washing, friends_over,
           budget_min, budget_max, room_preferences,
-          move_in_selection, lease_duration_months, zone_drawn, location_sharing, zipcode,
-          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference
+          move_in_selection, lease_duration_months, location_sharing, zipcode,
+          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference,
+          pet_ownership, pet_tolerance, pet_allergies
         `
         )
 
@@ -1329,11 +1162,10 @@ class AuthService {
           id,
           first_name, last_name, email,
           about, interests, photos,
-          education, company,
-          weekend_vibe, sleep_schedule, dish_washing, friends_over, pet_situation,
+           sleep_schedule, dish_washing, friends_over,
           budget_min, budget_max, room_preferences,
-          move_in_selection, lease_duration_months, zone_drawn, location_sharing, zipcode,
-          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference
+          move_in_selection, lease_duration_months, location_sharing, zipcode,
+          smoking_policy, alcohol_use, cannabis_policy, substance_free_preference, pet_ownership, pet_tolerance, pet_allergies
           `
         )
         .eq("id", user.id)
@@ -1597,15 +1429,14 @@ function computeProfileStrength(row) {
     Array.isArray(row?.interests) && row.interests.length >= 3,
     !!row?.budget_min || !!row?.budget_max,
     !!row?.move_in_selection,
-    !!row?.lease_duration,
-    !!row?.education || !!row?.company,
+    !!row?.lease_duration_months,
+    // !!row?.education || !!row?.company,
     Array.isArray(row?.photos) && row.photos.length > 0,
   ];
   const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
   return Number.isFinite(pct) ? pct : 0;
 }
 
-// weekend_vibe is a string in your data (e.g., "outdoor")
 // Use a simple heuristic to decide "drinks"
 const drinksFromWeekendVibe = (v) => {
   if (!v) return false;
@@ -1680,17 +1511,17 @@ function uiProfileToDbUpdates(ui) {
   if ("interests" in ui)
     updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
 
-  if (ui.lifestyle) {
-    if ("drinks" in ui.lifestyle)
-      updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
-    if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
-      updates.pet_situation = ui.lifestyle.dogOwner
-        ? "dog"
-        : ui.lifestyle.petFriendly
-        ? "small_pet"
-        : "none";
-    }
-  }
+  // if (ui.lifestyle) {
+  //   if ("drinks" in ui.lifestyle)
+  //     updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
+  //   if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
+  //     updates.pet_situation = ui.lifestyle.dogOwner
+  //       ? "dog"
+  //       : ui.lifestyle.petFriendly
+  //       ? "small_pet"
+  //       : "none";
+  //   }
+  // }
 
   updates.budget_min = ui?.budget_min;
   updates.budget_max = ui?.budget_max;
@@ -1698,10 +1529,10 @@ function uiProfileToDbUpdates(ui) {
   updates.lease_duration_months = ui?.lease_duration_months;
   updates.room_preferences = ui?.room_preferences;
 
-  if (ui.basic) {
-    if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
-    if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
-  }
+  // if (ui.basic) {
+  //   if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
+  //   if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
+  // }
 
   if ("location_sharing" in ui) {
     updates.location_sharing = ui.location_sharing;
@@ -1711,7 +1542,6 @@ function uiProfileToDbUpdates(ui) {
     updates.zipcode = ui.location?.replace("ZIP ", "") || null;
   }
 
-  // console.log("dbFormat before:", ui.substances, "\n\n");
   if (ui.substances) {
     if (ui.substances.smoking_policy !== undefined)
       updates.smoking_policy = ui.substances.smoking_policy;
@@ -1724,7 +1554,17 @@ function uiProfileToDbUpdates(ui) {
         ui.substances.substance_free_preference;
   }
 
-  // console.log("dbFormat after:", updates.substances, "\n\n");
+  // console.log("\n\n before:", ui.pets, "\n\n");
+  if (ui.pets) {
+    if (ui.pets.pet_ownership !== undefined)
+      updates.pet_ownership = ui.pets.pet_ownership;
+    if (ui.pets.pet_tolerance !== undefined)
+      updates.pet_tolerance = ui.pets.pet_tolerance;
+    if (ui.pets.pet_allergies !== undefined)
+      updates.pet_allergies = ui.pets.pet_allergies;
+  }
+
+  // console.log("\n\ndbFormat after:", updates, "\n\n");
 
   return updates;
 }
@@ -1769,7 +1609,7 @@ function ensurePhotoConsistency(photos) {
     };
   });
 }
-// pet_situation: "dog", "small_pet", "none", ...
+
 function dbUserToUiProfile(row) {
   // console.log("row from database", row);
   const fullName =
@@ -1777,9 +1617,9 @@ function dbUserToUiProfile(row) {
       .filter(Boolean)
       .join(" ") || null;
 
-  const drinks = drinksFromWeekendVibe(row?.weekend_vibe);
-  const dogOwner = row?.pet_situation === "dog";
-  const petFriendly = !!row?.pet_situation && row.pet_situation !== "none";
+  // const drinks = drinksFromWeekendVibe(row?.weekend_vibe);
+  // const dogOwner = row?.pet_situation === "dog";
+  // const petFriendly = !!row?.pet_situation && row.pet_situation !== "none";
   const nonSmoker = true;
   const zipcode = row?.zipcode || null;
 
@@ -1789,20 +1629,25 @@ function dbUserToUiProfile(row) {
       ? row.lease_duration_months
       : "";
 
-      var substance = {}
+  var substance = {}, pets = {};
 
-        if (row.smoking_policy !== undefined)
-          substance.smoking_policy = row.smoking_policy;
-        if (row.alcohol_use !== undefined)
-          substance.alcohol_use = row.alcohol_use;
-        if (row.cannabis_policy !== undefined)
-          substance.cannabis_policy = row.cannabis_policy;
-        if (row.substance_free_preference !== undefined)
-          substance.substance_free_preference =
-        row.substance_free_preference;
+  if (row.smoking_policy !== undefined)
+    substance.smoking_policy = row.smoking_policy;
+  if (row.alcohol_use !== undefined) substance.alcohol_use = row.alcohol_use;
+  if (row.cannabis_policy !== undefined)
+    substance.cannabis_policy = row.cannabis_policy;
+  if (row.substance_free_preference !== undefined)
+    substance.substance_free_preference = row.substance_free_preference;
 
+  if (row?.pet_ownership !== undefined)
+    pets.pet_ownership = row.pet_ownership;
+  if (row?.pet_tolerance !== undefined)
+    pets.pet_tolerance = row.pet_tolerance;
+  if (row?.pet_allergies !== undefined)
+    pets.pet_allergies = row.pet_allergies;
 
-  // console.log("return from dbUSer", substance);
+  // console.log(pets)
+
   return {
     avatarUri: null,
     initials: toInitials(fullName),
@@ -1818,81 +1663,24 @@ function dbUserToUiProfile(row) {
       ? row.interests.filter((x) => typeof x === "string")
       : [],
 
-    lifestyle: { drinks, dogOwner, nonSmoker, petFriendly },
+    lifestyle: { nonSmoker},
 
     budget_min: row?.budget_min || "",
     budget_max: row?.budget_max || "",
     move_in_selection: row?.move_in_selection || "",
     room_preferences: row?.room_preferences || "",
     lease_duration_months: leaseDuration,
+    pets: pets,
 
-    basic: {
-      education: row?.education || "",
-      company: row?.company || "",
-    },
+    // basic: {
+    //   education: row?.education || "",
+    //   company: row?.company || "",
+    // },
     photos: row?.photos,
     strength: computeProfileStrength(row),
-    substances: substance
+    substances: substance,
   };
 }
-
-// function uiProfileToDbUpdates(ui) {
-//   const updates = {};
-//   // console.log("backend ", ui);
-
-//   if ("about" in ui) updates.about = ui.about ?? null;
-//   if ("interests" in ui)
-//     updates.interests = Array.isArray(ui.interests) ? ui.interests : undefined;
-//   if ("photos" in ui) {
-//     updates.photos = Array.isArray(ui.photos)
-//       ? ui.photos
-//           .map((p) => (typeof p === "string" ? p : p?.uri))
-//           .filter(Boolean)
-//       : undefined;
-//   }
-
-//   if (ui.lifestyle) {
-//     if ("drinks" in ui.lifestyle)
-//       updates.weekend_vibe = ui.lifestyle.drinks ? "party" : null;
-//     if ("dogOwner" in ui.lifestyle || "petFriendly" in ui.lifestyle) {
-//       updates.pet_situation = ui.lifestyle.dogOwner
-//         ? "dog"
-//         : ui.lifestyle.petFriendly
-//         ? "small_pet"
-//         : "none";
-//     }
-//   }
-
-// if (ui.housing) {
-//   if ("budget" in ui.housing) {
-//     const { min, max } = parseBudgetRange(ui.housing.budget);
-//     updates.budget_min = min;
-//     updates.budget_max = max;
-//   }
-//   if ("moveIn" in ui.housing) updates.move_in_selection = ui.housing.moveIn;
-//   if ("lease" in ui.housing) updates.lease_duration = ui.housing.lease;
-//   if ("roomSize" in ui.housing) updates.zone_drawn = ui.housing.roomSize;
-// }
-
-//   if (ui.basic) {
-//     if ("education" in ui.basic) updates.education = ui.basic.education ?? null;
-//     if ("company" in ui.basic) updates.company = ui.basic.company ?? null;
-//   }
-//   if ("location_sharing" in ui) {
-//     updates.location_sharing = ui.location_sharing;
-//   }
-
-//   // ✅ Persist location_sharing
-//   if ("location" in ui) {
-//     updates.zipcode = ui.location?.replace("ZIP ", "") || null;
-//   }
-
-//   if ("location_sharing" in ui) {
-//     updates.location_sharing = ui.location_sharing;
-//   }
-
-//   return updates;
-// }
 
 export const authService = new AuthService();
 export default authService;

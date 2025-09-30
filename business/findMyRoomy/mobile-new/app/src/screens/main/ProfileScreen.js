@@ -26,10 +26,11 @@ import { AboutSection } from "@/components/account/AboutScreen";
 import { Interests } from "@/components/account/Interests";
 import { Basics } from "@/components/account/Basics";
 
-import {Substances} from "@/components/account/Substances"
+import { Substances } from "@/components/account/Substances";
+import { Pets } from "@/components/account/Pets";
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState();
   const [loading, setLoading] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -82,21 +83,12 @@ export default function ProfileScreen() {
       setSaving(true);
       setError(null);
 
-      // console.log(
-      //   "🔍 saveProfile: saving profile with photos:",
-      //   updatedProfile.photos
-      // );
-
       const res = await authService.updateAccountProfileFromUI(updatedProfile);
-      
+
       if (!res?.success) {
         throw new Error(res?.error || "Failed to save");
       }
 
-      // console.log(
-      //   "🔍 saveProfile: received back from server:",
-      //   res.profile?.photos
-      // );
       // ensure the photos are set before saving as the onload on mount in the useEffect looks for the photos to be without a long path
       res.profile.photos = updatedProfile.photos;
 
@@ -127,19 +119,6 @@ export default function ProfileScreen() {
     setEditing((e) => ({ ...e, [key]: !e[key] }));
   };
 
-  // if (loading) {
-  //   return (
-  //     <View
-  //       style={[
-  //         styles.container,
-  //         { alignItems: "center", justifyContent: "center" },
-  //       ]}
-  //     >
-  //       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-  //       <Text style={{ color: "#6B7280" }}>Loading profile…</Text>
-  //     </View>
-  //   );
-  // }
 
   return (
     <>
@@ -203,9 +182,28 @@ export default function ProfileScreen() {
               profile={profile}
               setDirty={setDirty}
               setProfile={setProfile}
-              updateProfile={updateProfile}
               toggleEdit={toggleEdit}
             />
+
+            <Pets
+              editing={editing}
+              profile={profile}
+              setDirty={setDirty}
+              setProfile={setProfile}
+              toggleEdit={toggleEdit}
+            />
+
+            {/* <Amenities
+          editing={editing}
+          profile={profile}
+          updateProfile={updateProfile}
+          toggleEdit={toggleEdit}
+          QUIZ={QUIZ}
+          SingleSelectEditor={SingleSelectEditor}
+          MultiSelectEditor={MultiSelectEditor}
+          getOptionLabel={getOptionLabel}
+        />
+         */}
           </>
         ) : (
           <Text style={{ color: "#6B7280", textAlign: "center" }}>
